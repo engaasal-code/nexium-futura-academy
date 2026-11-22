@@ -131,7 +131,24 @@ function headerHTML(u) {
 function sideHTML(items, tag) {
   return `${APP.menuOpen ? '<div class="side-ov" onclick="APP.menuOpen=false;render()"></div>' : ''}<aside class="side ${APP.menuOpen ? 'open' : ''}">${tag ? `<div class="portal-tag">${tag}</div>` : ''}${items.map(it => it.grp ? `<div class="grp">${it.grp}</div>` :
     `<a class="it ${APP.view === it.v ? 'on' : ''}" onclick="go('${it.v}')">${icon(it.i)}<span>${it.t}</span>${it.b ? `<span class="bdg">${it.b}</span>` : ''}</a>`).join('')}
-    <div class="grp"></div><a class="it" onclick="logout()">${icon('logout')}<span>${L('تسجيل الخروج', 'Log out')}</span></a></aside>`;
+    <div class="grp"></div><a class="it" onclick="changePassword()">${icon('lock')}<span>${L('تغيير كلمة المرور', 'Change password')}</span></a><a class="it" onclick="logout()">${icon('logout')}<span>${L('تسجيل الخروج', 'Log out')}</span></a></aside>`;
+}
+/* ---------- change password (all portals) ---------- */
+function changePassword() {
+  APP.menuOpen = false; const s = document.querySelector('.side'); if (s) s.classList.remove('open');
+  modal(L('تغيير كلمة المرور', 'Change password'), `<div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="cp_new" dir="ltr" placeholder="${L('6 أحرف على الأقل', 'at least 6 characters')}"></div>
+    <div class="field"><label>${L('تأكيد كلمة المرور', 'Confirm password')}</label><input class="input" type="password" id="cp_new2" dir="ltr" onkeydown="if(event.key==='Enter')savePassword()"></div>
+    <div class="tiny muted">${L('استخدم حروف وأرقام ورموز عشان تبقى أقوى.', 'Mix letters, numbers and symbols for a stronger password.')}</div>`,
+    `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="savePassword()">${L('حفظ', 'Save')}</button>`);
+  setTimeout(() => $('#cp_new')?.focus(), 50);
+}
+async function savePassword() {
+  const p = val('cp_new'), p2 = val('cp_new2');
+  if (p.length < 6) return toast(L('كلمة المرور 6 أحرف على الأقل', 'Password must be at least 6 characters'), 'bad');
+  if (p !== p2) return toast(L('كلمتين المرور مش متطابقين', 'Passwords do not match'), 'bad');
+  if (IS_LIVE) { const { error } = await LIVE.sb.auth.updateUser({ password: p }); if (error) return toast(liveErr(error.message), 'bad'); }
+  else { const u = currentUser(); if (u) { u.pass = p; save(); } }
+  closeModal(); toast(L('تم تغيير كلمة المرور ✓', 'Password changed ✓'), 'ok');
 }
 const waNum = () => { let d = String(D.social.whatsapp || '').replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '2' + d; return d; };
 const waBtn = () => `<a class="wa" href="https://wa.me/${waNum()}" target="_blank" rel="noopener">${bicon('whatsapp', 22)}<span>${L('تواصل معنا', 'Chat with us')}</span></a>`;
