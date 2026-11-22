@@ -50,7 +50,7 @@ const bicon = (n, sz = 18) => `<svg viewBox="0 0 24 24" width="${sz}" height="${
 /* ---------- app state ---------- */
 const APP = { portal: 'student', view: 'home', params: {}, user: null, adminRole: null, menuOpen: false, publicPage: null };
 const SESS_KEY = 'nexium_session_v1';
-function saveSession() { try { localStorage.setItem(SESS_KEY, JSON.stringify({ s: APP.sessions || {}, lang: LANG })); } catch (e) {} }
+function saveSession() { try { localStorage.setItem(SESS_KEY, JSON.stringify({ s: IS_LIVE ? {} : (APP.sessions || {}), lang: LANG })); } catch (e) {} }
 function loadSession() { try { const v = JSON.parse(localStorage.getItem(SESS_KEY) || '{}'); APP.sessions = v.s || {}; if (v.lang) LANG = v.lang; } catch (e) { APP.sessions = {}; } }
 function currentUser() {
   const id = APP.sessions[APP.portal]; if (!id) return null;
@@ -188,7 +188,7 @@ function authHTML() {
   let form = '';
   if (P === 'student' && AUTH.mode === 'register') {
     form = `<h2 style="text-align:center">${L('إنشاء حساب جديد', 'Create an account')}</h2><p class="muted small" style="text-align:center;margin:4px 0 10px">${L('بيانات ولي الأمر والطالب', 'Parent and student details')}</p>
-      <div class="social">${['google', 'facebook', 'yahoo'].map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>
+      <div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>
       <div class="form-grid"><div class="field"><label class="req">${L('اسم ولي الأمر', 'Parent name')}</label><input class="input" id="r_parent"></div><div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input" id="r_name"></div></div>
       <div class="field"><label class="req">${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="r_email" type="email" dir="ltr"></div>
       <div class="form-grid"><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile number')}</label><input class="input" id="r_phone" dir="ltr" placeholder="05xxxxxxxx"></div>
@@ -204,13 +204,15 @@ function authHTML() {
       : P === 'teacher' ? D.teachers.slice(0, 4).map(t => `<button class="btn sm ghost" onclick="A_demoLogin('${t.id}')">${esc(tName(t))}</button>`).join('')
         : D.staff.map(a => `<button class="btn sm ghost" onclick="A_demoLogin('${a.id}')">${roleName(a.role)}</button>`).join('');
     form = `<h2 style="text-align:center">${P === 'student' ? L('تسجيل الدخول', 'Log in') : P === 'teacher' ? L('دخول المدرس', 'Teacher login') : L('دخول الإدارة', 'Admin login')}</h2>
-      ${P === 'student' ? `<div class="social">${['google', 'facebook', 'yahoo'].map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
+      ${P === 'student' ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
       <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="l_email" dir="ltr" type="email"></div>
       <div class="field"><label>${L('كلمة المرور', 'Password')}</label><input class="input" id="l_pass" dir="ltr" type="password" onkeydown="if(event.key==='Enter')A_login()"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
       <button class="btn block" onclick="A_login()">${L('دخول', 'Log in')}</button>
+      ${IS_LIVE ? `<div class="row between small" style="margin-top:10px"><button class="btn link" onclick="liveForgot()">${L('نسيت كلمة المرور؟', 'Forgot password?')}</button>${P !== 'student' ? `<button class="btn link" onclick="liveActivate()">${L('تفعيل الحساب لأول مرة', 'First-time activation')}</button>` : ''}</div>` : ''}
+      ${IS_LIVE && LIVE.profile && portalForRole(LIVE.profile.role) !== P ? `<div class="notice info" style="margin-top:12px">${L('إنت داخل بحساب', 'You are signed in as')} <b>${roleName(LIVE.profile.role) || L('طالب', 'student')}</b>. <button class="btn link" onclick="switchPortal('${portalForRole(LIVE.profile.role)}')">${L('افتح بوابتك', 'Open your portal')}</button> · <button class="btn link" onclick="logout()">${L('خروج', 'Log out')}</button></div>` : ''}
       ${P === 'student' ? `<p class="small" style="text-align:center;margin-top:12px">${L('مستخدم جديد؟', 'New here?')} <button class="btn link" onclick="AUTH.mode='register';AUTH.err='';render()">${L('أنشئ حساب', 'Create an account')}</button></p>` : ''}
-      <div class="demo-box"><b>${L('دخول سريع للتجربة', 'Quick demo login')}</b> <span class="muted">(${L('كلمة المرور لكل الحسابات: 123456', 'password for all: 123456')})</span><div class="row">${demo}</div></div>`;
+      ${IS_LIVE ? '' : `<div class="demo-box"><b>${L('دخول سريع للتجربة', 'Quick demo login')}</b> <span class="muted">(${L('كلمة المرور لكل الحسابات: 123456', 'password for all: 123456')})</span><div class="row">${demo}</div></div>`}`;
   }
   const portals = `<div class="portal-switch"><span class="small muted">${L('روابط منفصلة:', 'Separate links:')}</span>
     <button class="btn sm ${P === 'student' ? '' : 'ghost'}" onclick="switchPortal('student')">${L('الطالب / ولي الأمر', 'Student / parent')}</button>
@@ -219,6 +221,7 @@ function authHTML() {
   return `<div class="auth">${art}<div class="frm"><div class="box"><div style="text-align:end;margin-bottom:6px"><button class="btn sm ghost" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${icon('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button></div>
     <img src="${LOGO_FULL}" class="logo-full" alt="logo">${form}${portals}</div></div></div>${P === 'student' ? footerHTML() : ''}${waBtn()}`;
 }
+const socialProviders = () => IS_LIVE ? ['google', 'facebook'] : ['google', 'facebook', 'yahoo'];
 const gradeOpts = st => (STAGES.find(s => s.id === st) || { grades: [] }).grades.map(g => `<option value="${g}">${gradeName(g)}</option>`).join('');
 function A_login() {
   const em = val('l_email').toLowerCase(), pw = val('l_pass');
