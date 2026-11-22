@@ -11,7 +11,7 @@
 const LOGO_FULL = 'assets/logo.jpg';      // اللوجو الكامل (صفحة الدخول والفوتر)
 const LOGO_EMBLEM = 'assets/emblem.jpg';  // الشعار الصغير (الهيدر)
 
-const SUPABASE_URL = '';       // مثال: 'https://abcdefgh.supabase.co'
-const SUPABASE_ANON_KEY = '';  // مثال: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
+const SUPABASE_URL = 'https://nvqrirctdfkcykkiokpb.supabase.co';       // مثال: 'https://abcdefgh.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_Zf9Uva_toRaDp9HTT3TDhQ_cauXTWqY';  // مثال: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
 
 const IS_LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined');
