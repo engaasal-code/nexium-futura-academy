@@ -177,7 +177,21 @@ function renderPublicPage(slug) {
 }
 
 /* ---------- auth ---------- */
-const AUTH = { mode: 'login', err: '' };
+const AUTH = { mode: 'login', err: '', form: {}, bad: [] };
+const fv = k => esc(AUTH.form[k] || '');
+const fBad = k => AUTH.bad.includes(k) ? 'bad-field' : '';
+// keeps what the visitor typed when the form re-draws, and returns which required fields are missing
+function authKeep() {
+  ['r_parent', 'r_name', 'r_email', 'r_phone', 'r_country', 'r_stage', 'r_grade', 'r_pass', 'l_email'].forEach(k => { const e = document.getElementById(k); if (e) AUTH.form[k] = e.value; });
+  const labels = { r_parent: L('اسم ولي الأمر', 'Parent name'), r_name: L('اسم الطالب', 'Student name'), r_email: L('البريد الإلكتروني', 'Email'), r_phone: L('رقم الموبايل', 'Mobile number'), r_pass: L('كلمة المرور', 'Password') };
+  AUTH.bad = Object.keys(labels).filter(k => document.getElementById(k) && !String(AUTH.form[k] || '').trim());
+  if (document.getElementById('r_phone') && AUTH.form.r_phone && AUTH.form.r_phone.replace(/\D/g, '').length < 8) AUTH.bad.push('r_phone');
+  if (document.getElementById('r_pass') && AUTH.form.r_pass && AUTH.form.r_pass.length < 6) AUTH.bad.push('r_pass');
+  if (document.getElementById('r_email') && AUTH.form.r_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(AUTH.form.r_email.trim())) AUTH.bad.push('r_email');
+  AUTH.bad = [...new Set(AUTH.bad)];
+  return AUTH.bad.map(k => labels[k]);
+}
+function authMissingMsg(list) { return L('من فضلك راجع الخانات المعلّمة بالأحمر: ', 'Please check the fields marked in red: ') + list.join('، '); }
 function authHTML() {
   const P = APP.portal;
   const art = `<div class="art"><div><img src="${LOGO_FULL}" style="width:120px;border-radius:16px;background:#fff;padding:4px" alt="logo">
@@ -188,14 +202,14 @@ function authHTML() {
   let form = '';
   if (P === 'student' && AUTH.mode === 'register') {
     form = `<h2 style="text-align:center">${L('إنشاء حساب جديد', 'Create an account')}</h2><p class="muted small" style="text-align:center;margin:4px 0 10px">${L('بيانات ولي الأمر والطالب', 'Parent and student details')}</p>
-      <div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>
-      <div class="form-grid"><div class="field"><label class="req">${L('اسم ولي الأمر', 'Parent name')}</label><input class="input" id="r_parent"></div><div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input" id="r_name"></div></div>
-      <div class="field"><label class="req">${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="r_email" type="email" dir="ltr"></div>
-      <div class="form-grid"><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile number')}</label><input class="input" id="r_phone" dir="ltr" placeholder="05xxxxxxxx"></div>
-      <div class="field"><label class="req">${L('الدولة', 'Country')}</label><select class="input" id="r_country">${D.countries.map(c => `<option value="${c.code}" ${c.code === VISITOR_COUNTRY ? 'selected' : ''}>${c.flag} ${L(c.ar, c.en)}</option>`).join('')}</select></div></div>
-      <div class="form-grid"><div class="field"><label class="req">${L('المرحلة', 'Stage')}</label><select class="input" id="r_stage" onchange="document.getElementById('r_grade').innerHTML=gradeOpts(this.value)">${STAGES.filter(s => s.id !== 'summer').map(s => `<option value="${s.id}">${L(s.ar, s.en)}</option>`).join('')}</select></div>
-      <div class="field"><label class="req">${L('الصف', 'Grade')}</label><select class="input" id="r_grade">${gradeOpts('kg')}</select></div></div>
-      <div class="field"><label class="req">${L('كلمة المرور', 'Password')}</label><input class="input" id="r_pass" type="password" dir="ltr" placeholder="${L('6 أحرف على الأقل', 'at least 6 characters')}"></div>
+      ${socialProviders().length ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>` : ''}
+      <div class="form-grid"><div class="field"><label class="req">${L('اسم ولي الأمر', 'Parent name')}</label><input class="input ${fBad('r_parent')}" id="r_parent" value="${fv('r_parent')}"></div><div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input ${fBad('r_name')}" id="r_name" value="${fv('r_name')}"></div></div>
+      <div class="field"><label class="req">${L('البريد الإلكتروني', 'Email')}</label><input class="input ${fBad('r_email')}" id="r_email" type="email" dir="ltr" value="${fv('r_email')}"></div>
+      <div class="form-grid"><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile number')}</label><input class="input ${fBad('r_phone')}" id="r_phone" dir="ltr" placeholder="05xxxxxxxx" value="${fv('r_phone')}"></div>
+      <div class="field"><label class="req">${L('الدولة', 'Country')}</label><select class="input" id="r_country">${D.countries.map(c => `<option value="${c.code}" ${c.code === (AUTH.form.r_country || VISITOR_COUNTRY) ? 'selected' : ''}>${c.flag} ${L(c.ar, c.en)}</option>`).join('')}</select></div></div>
+      <div class="form-grid"><div class="field"><label class="req">${L('المرحلة', 'Stage')}</label><select class="input" id="r_stage" onchange="document.getElementById('r_grade').innerHTML=gradeOpts(this.value)">${STAGES.filter(s => s.id !== 'summer').map(s => `<option value="${s.id}" ${s.id === (AUTH.form.r_stage || 'kg') ? 'selected' : ''}>${L(s.ar, s.en)}</option>`).join('')}</select></div>
+      <div class="field"><label class="req">${L('الصف', 'Grade')}</label><select class="input" id="r_grade">${gradeOpts(AUTH.form.r_stage || 'kg', AUTH.form.r_grade)}</select></div></div>
+      <div class="field"><label class="req">${L('كلمة المرور', 'Password')}</label><input class="input ${fBad('r_pass')}" id="r_pass" type="password" dir="ltr" placeholder="${L('6 أحرف على الأقل', 'at least 6 characters')}" value="${fv('r_pass')}"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
       <button class="btn gold block" onclick="A_register()">${L('إنشاء الحساب', 'Create account')}</button>
       <p class="small" style="text-align:center;margin-top:12px">${L('عندك حساب؟', 'Have an account?')} <button class="btn link" onclick="AUTH.mode='login';AUTH.err='';render()">${L('سجّل دخول', 'Log in')}</button></p>`;
@@ -204,8 +218,8 @@ function authHTML() {
       : P === 'teacher' ? D.teachers.slice(0, 4).map(t => `<button class="btn sm ghost" onclick="A_demoLogin('${t.id}')">${esc(tName(t))}</button>`).join('')
         : D.staff.map(a => `<button class="btn sm ghost" onclick="A_demoLogin('${a.id}')">${roleName(a.role)}</button>`).join('');
     form = `<h2 style="text-align:center">${P === 'student' ? L('تسجيل الدخول', 'Log in') : P === 'teacher' ? L('دخول المدرس', 'Teacher login') : L('دخول الإدارة', 'Admin login')}</h2>
-      ${P === 'student' ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
-      <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="l_email" dir="ltr" type="email"></div>
+      ${P === 'student' && socialProviders().length ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
+      <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="l_email" dir="ltr" type="email" value="${fv('l_email')}"></div>
       <div class="field"><label>${L('كلمة المرور', 'Password')}</label><input class="input" id="l_pass" dir="ltr" type="password" onkeydown="if(event.key==='Enter')A_login()"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
       <button class="btn block" onclick="A_login()">${L('دخول', 'Log in')}</button>
@@ -221,9 +235,10 @@ function authHTML() {
   return `<div class="auth">${art}<div class="frm"><div class="box"><div style="text-align:end;margin-bottom:6px"><button class="btn sm ghost" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${icon('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button></div>
     <img src="${LOGO_FULL}" class="logo-full" alt="logo">${form}${portals}</div></div></div>${P === 'student' ? footerHTML() : ''}${waBtn()}`;
 }
-const socialProviders = () => IS_LIVE ? ['google', 'facebook'] : ['google', 'facebook', 'yahoo'];
-const gradeOpts = st => (STAGES.find(s => s.id === st) || { grades: [] }).grades.map(g => `<option value="${g}">${gradeName(g)}</option>`).join('');
+const socialProviders = () => IS_LIVE ? (typeof SOCIAL_LOGIN !== 'undefined' ? SOCIAL_LOGIN : []) : ['google', 'facebook', 'yahoo'];
+const gradeOpts = (st, sel) => (STAGES.find(s => s.id === st) || { grades: [] }).grades.map(g => `<option value="${g}" ${g === sel ? 'selected' : ''}>${gradeName(g)}</option>`).join('');
 function A_login() {
+  authKeep(); AUTH.bad = [];
   const em = val('l_email').toLowerCase(), pw = val('l_pass');
   let u = null;
   if (APP.portal === 'student') u = D.students.find(s => s.email.toLowerCase() === em && s.pass === pw);
@@ -255,6 +270,7 @@ function A_socialDone(p) {
   if (!ex) D.students.push(s); save(); closeModal(); A_demoLogin(s.id); toast(L('تم الدخول بنجاح', 'Signed in'), 'ok');
 }
 function A_register() {
+  const miss = authKeep(); if (miss.length) { AUTH.err = authMissingMsg(miss); return render(); }
   const f = { parent: val('r_parent'), name: val('r_name'), email: val('r_email'), phone: val('r_phone'), country: val('r_country'), stage: val('r_stage'), grade: val('r_grade'), pass: val('r_pass') };
   if (!f.parent || !f.name || !f.email || !f.phone || !f.pass) AUTH.err = L('كل الحقول المعلّمة بـ * مطلوبة', 'All * fields are required');
   else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) AUTH.err = L('البريد الإلكتروني غير صحيح', 'Invalid email');

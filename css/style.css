@@ -384,3 +384,5 @@ a.btn{text-decoration:none}
   .stage small{display:none}
   .page-h>.btn{width:auto}
 }
+
+.input.bad-field{border-color:var(--bad);background:#FFF7F7;box-shadow:0 0 0 3px rgba(214,69,69,.12)}

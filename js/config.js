@@ -14,4 +14,8 @@ const LOGO_EMBLEM = 'assets/emblem.jpg';  // الشعار الصغير (الهي
 const SUPABASE_URL = 'https://nvqrirctdfkcykkiokpb.supabase.co';       // مثال: 'https://abcdefgh.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_Zf9Uva_toRaDp9HTT3TDhQ_cauXTWqY';  // مثال: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
 
+// الدخول بحسابات خارجية: سيبها فاضية لحد ما تفعّلها في Supabase (Authentication → Providers)
+// بعد التفعيل اكتب مثلاً: ['google'] أو ['google', 'facebook']
+const SOCIAL_LOGIN = [];
+
 const IS_LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined');

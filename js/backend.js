@@ -197,12 +197,14 @@ if (LIVE.on) {
   logout = async function () { await LIVE.sb.auth.signOut(); LIVE.profile = null; APP.sessions = {}; APP.view = 'home'; await loadPublic(); render(); };
 
   A_login = async function () {
+    authKeep(); AUTH.bad = [];
     const email = val('l_email'), password = val('l_pass'); if (!email || !password) { AUTH.err = L('اكتب البريد وكلمة المرور', 'Enter email and password'); return render(); }
     AUTH.err = ''; const { error } = await LIVE.sb.auth.signInWithPassword({ email, password });
     if (error) { AUTH.err = liveErr(error.message); if (/not confirmed/i.test(error.message)) AUTH.err += ` <button class="btn link" onclick="liveResend('${esc(email)}')">${L('إعادة إرسال رسالة التأكيد', 'Resend confirmation')}</button>`; return render(); }
     await afterSignIn();
   };
   A_register = async function () {
+    const miss = authKeep(); if (miss.length) { AUTH.err = authMissingMsg(miss); return render(); }
     const f = { parent: val('r_parent'), name: val('r_name'), email: val('r_email'), phone: val('r_phone'), country: val('r_country'), stage: val('r_stage'), grade: val('r_grade'), pass: val('r_pass') };
     if (!f.parent || !f.name || !f.email || !f.phone || !f.pass) AUTH.err = L('كل الحقول المعلّمة بـ * مطلوبة', 'All * fields are required');
     else if (f.phone.replace(/\D/g, '').length < 8) AUTH.err = L('رقم الموبايل غير صحيح', 'Invalid mobile number');
@@ -211,7 +213,7 @@ if (LIVE.on) {
     const { data, error } = await LIVE.sb.auth.signUp({ email: f.email, password: f.pass, options: { emailRedirectTo: location.origin + location.pathname, data: { parent: f.parent, name: f.name, phone: f.phone, country: f.country, stage: f.stage, grade: f.grade } } });
     if (error) { AUTH.err = liveErr(error.message); return render(); }
     if (data.session) return afterSignIn();
-    AUTH.mode = 'login'; AUTH.err = '';
+    AUTH.mode = 'login'; AUTH.err = ''; AUTH.form.l_email = f.email;
     render();
     modal(L('افتح بريدك الإلكتروني 📩', 'Check your email 📩'), `<p>${L('بعتنا رسالة تأكيد على', 'We sent a confirmation link to')} <b class="num">${esc(f.email)}</b>.</p><p class="muted">${L('اضغط على الرابط اللي في الرسالة، وبعدين ارجع سجّل دخول. لو مش لاقيها شوف الـ Spam.', 'Click the link in the email, then come back and log in. Check Spam if you can’t find it.')}</p>`, `<button class="btn" onclick="closeModal()">${L('تمام', 'OK')}</button>`);
   };
