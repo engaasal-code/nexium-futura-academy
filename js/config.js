@@ -14,8 +14,9 @@ const LOGO_EMBLEM = 'assets/emblem.jpg';  // الشعار الصغير (الهي
 const SUPABASE_URL = 'https://nvqrirctdfkcykkiokpb.supabase.co';       // مثال: 'https://abcdefgh.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_Zf9Uva_toRaDp9HTT3TDhQ_cauXTWqY';  // مثال: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
 
-// الدخول بحسابات خارجية: سيبها فاضية لحد ما تفعّلها في Supabase (Authentication → Providers)
-// بعد التفعيل اكتب مثلاً: ['google'] أو ['google', 'facebook']
-const SOCIAL_LOGIN = [];
+// أزرار الدخول بحسابات خارجية اللي بتظهر في صفحة التسجيل والدخول.
+// لازم كل واحد يتفعّل في Supabase (Authentication → Providers) – لو لسه متفعّلش، الزرار بيقول للزائر يستخدم الإيميل.
+// تقدر تشيل أي واحد من القائمة لو مش عايزه يظهر.
+const SOCIAL_LOGIN = ['google', 'facebook', 'apple'];
 
 const IS_LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined');

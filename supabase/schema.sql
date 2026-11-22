@@ -52,6 +52,7 @@ create table if not exists public.teachers (
   added_students text[] not null default '{}',
   extra jsonb not null default '{}'
 );
+alter table public.teachers add column if not exists admin_rating numeric check (admin_rating between 1 and 5);
 -- pay rates + contacts (visible only to the teacher himself and admin)
 create table if not exists public.teacher_private (
   teacher_id text primary key references public.teachers(id) on delete cascade,
@@ -233,7 +234,7 @@ create or replace function public.is_staff() returns boolean language sql stable
 $$ select coalesce(public.my_role() in ('supervisor','principal','ceo'), false) $$;
 create or replace function public.has_perm(p text) returns boolean language sql stable security definer set search_path = public as $$
   select case
-    when public.my_role() = 'ceo' and p in ('sys.perms','sys.staff') then true
+    when public.my_role() = 'ceo' then true
     when public.my_role() is null or public.my_role() = 'student' then false
     when public.my_role() = 'teacher' and not coalesce((select active from public.teachers where id = public.my_ref()), false) then false
     else coalesce((select (value -> public.my_role() ->> p)::boolean from public.settings where key = 'perms'), false)
@@ -357,6 +358,8 @@ begin
   if public.my_role() = 'teacher' then
     new.youtube := old.youtube; new.active := old.active; new.badge := old.badge; new.user_id := old.user_id;
   end if;
+  -- only people with the "tch.rating" permission can set the admin star rating
+  if public.my_role() is not null and not public.has_perm('tch.rating') then new.admin_rating := old.admin_rating; end if;
   return new;
 end $$;
 drop trigger if exists guard_teachers on public.teachers;

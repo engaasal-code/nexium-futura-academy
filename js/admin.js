@@ -215,7 +215,7 @@ function AD_teachers() {
   return `<div class="page-h"><div><div class="crumbs">${L('الأكاديمية', 'Academy')}</div><h1>${L('المدرسين', 'Teachers')}</h1><p>${L('إضافة المدرس من صلاحية مدير المدرسة. لينك اليوتيوب التعريفي بتحطه الإدارة لكل مدرس.', 'Adding teachers is a principal permission. The intro YouTube link is set by admin.')}</p></div>${can('tch.add') ? `<button class="btn gold" onclick="AD_teacherForm()">${icon('plus')} ${L('إضافة مدرس', 'Add teacher')}</button>` : lockedBtn(L('إضافة مدرس', 'Add teacher'))}</div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>${L('المدرس', 'Teacher')}</th><th>${L('المواد', 'Subjects')}</th><th>${L('التقييم', 'Rating')}</th><th>${L('حصص', 'Sessions')}</th><th>${L('فيديو يوتيوب', 'YouTube')}</th><th>${L('مفعّل', 'Active')}</th><th>${L('إجراءات', 'Actions')}</th></tr></thead><tbody>
   ${D.teachers.map(t => `<tr><td><div class="row"><span class="av" style="background:${t.color};width:34px;height:34px;font-size:13px">${esc(initials(t.name))}</span><div><b>${esc(tName(t))}</b><div class="tiny muted" dir="ltr">${esc(t.email)}</div></div></div></td><td><div class="chips">${t.subjects.slice(0, 3).map(x => `<span class="pill navy">${esc(subjName(subjById(x.id)))}</span>`).join('')}${t.subjects.length > 3 ? `<span class="pill gray">+${t.subjects.length - 3}</span>` : ''}</div></td>
-    <td>${stars(avgRating(t.id))} <span class="small num">${avgRating(t.id).toFixed(1)}</span></td><td class="num">${D.sessions.filter(s => s.teacherId === t.id && s.status === 'done').length}</td><td>${t.youtube ? `<a class="yt" href="${esc(t.youtube)}" target="_blank" rel="noopener">${bicon('youtube', 16)} ${L('عرض', 'View')}</a>` : '<span class="muted">—</span>'}</td>
+    <td>${stars(avgRating(t.id))} <span class="small num">${avgRating(t.id).toFixed(1)}</span>${t.adminRating ? ` <span class="pill gold tiny">${L('الإدارة', 'Admin')}</span>` : ''}${can('tch.rating') ? `<div><button class="btn link small" onclick="AD_rateTeacher('${t.id}')">${icon('star')} ${L('تقييم الإدارة', 'Admin rating')}</button></div>` : ''}</td><td class="num">${D.sessions.filter(s => s.teacherId === t.id && s.status === 'done').length}</td><td>${t.youtube ? `<a class="yt" href="${esc(t.youtube)}" target="_blank" rel="noopener">${bicon('youtube', 16)} ${L('عرض', 'View')}</a>` : '<span class="muted">—</span>'}</td>
     <td><label class="sw"><input type="checkbox" ${t.active ? 'checked' : ''} ${can('tch.delete') ? '' : 'disabled'} onchange="tchById('${t.id}').active=this.checked;save()"><span></span></label></td>
     <td><div class="acts">${can('tch.edit') || can('tch.rates') ? `<button class="btn sm ghost" onclick="AD_teacherForm('${t.id}')">${icon('edit')} ${L('تعديل', 'Edit')}</button>` : lockedBtn('')}</div></td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -246,9 +246,22 @@ function AD_schedule() {
   ${late.length ? `<div class="notice warn" style="margin-bottom:14px">${icon('clock')} <b class="num">${late.length}</b> ${L('حصة انتهت والمدرس لم يسجّل الحضور:', 'ended sessions without attendance:')} ${late.slice(0, 4).map(s => esc(tName(tchById(s.teacherId)))).join('، ')}</div>` : ''}
   <div class="card">${calNav('ACAL')}${monthCal(ACAL.y, ACAL.m, ev)}</div>`;
 }
+function AD_rateTeacher(tid) {
+  const t = tchById(tid); window.__ar = t.adminRating || 0;
+  const draw = () => `<div class="star-in">${[1, 2, 3, 4, 5].map(i => `<button class="${i <= window.__ar ? 'on' : ''}" onclick="window.__ar=${i};this.parentNode.outerHTML=window.__drawAR()">★</button>`).join('')}</div>`; window.__drawAR = draw;
+  modal(L('تقييم الإدارة لـ ', 'Admin rating for ') + esc(tName(t)), `<p class="muted" style="margin-top:0">${L('التقييم ده هو اللي بيظهر للطلاب وأولياء الأمور على كارت المدرس بدل متوسط تقييمات أولياء الأمور.', 'This rating is shown to students and parents on the teacher card instead of the parents’ average.')}</p>${draw()}
+    <div class="small muted" style="margin-top:10px">${L('متوسط تقييم أولياء الأمور حالياً:', 'Current parents’ average:')} ${stars(parentRating(tid))} <b class="num">${parentRating(tid).toFixed(1)}</b> (${D.ratings.filter(r => r.teacherId === tid).length})</div>`,
+    `${t.adminRating ? `<button class="btn ghost" onclick="AD_saveAdminRating('${tid}',null)">${L('إلغاء تقييم الإدارة', 'Remove admin rating')}</button>` : ''}<button class="btn gold" onclick="AD_saveAdminRating('${tid}',window.__ar)">${L('حفظ', 'Save')}</button>`);
+}
+function AD_saveAdminRating(tid, v) {
+  if (v !== null && !(v >= 1 && v <= 5)) return toast(L('اختار من 1 لـ 5 نجوم', 'Pick 1 to 5 stars'), 'bad');
+  tchById(tid).adminRating = v; save(); closeModal(); render(); toast(v ? L('تم حفظ تقييم الإدارة', 'Admin rating saved') : L('رجع لتقييم أولياء الأمور', 'Back to parents’ rating'), 'ok');
+}
 function AD_ratings() {
-  return `<div class="page-h"><div><div class="crumbs">${L('الأكاديمية', 'Academy')}</div><h1>${L('تقييمات المدرسين من أولياء الأمور', 'Teacher ratings from parents')}</h1></div></div>
-  <div class="grid g3">${D.teachers.map(t => { const rs = D.ratings.filter(r => r.teacherId === t.id); const a = avgRating(t.id); return `<div class="card"><div class="row" style="margin-bottom:10px"><span class="av" style="background:${t.color}">${esc(initials(t.name))}</span><div><b>${esc(tName(t))}</b><div>${stars(a)} <b class="num">${a.toFixed(1)}</b> <span class="small muted">(${rs.length})</span></div></div></div>
+  return `<div class="page-h"><div><div class="crumbs">${L('الأكاديمية', 'Academy')}</div><h1>${L('تقييمات المدرسين', 'Teacher ratings')}</h1><p>${L('تقييمات أولياء الأمور، وتقييم الإدارة بالنجوم (لو اتحدد بيظهر للطلاب بدل المتوسط).', 'Parents’ reviews and the admin star rating (shown to students instead of the average when set).')}</p></div></div>
+  <div class="grid g3">${D.teachers.map(t => { const rs = D.ratings.filter(r => r.teacherId === t.id); const a = parentRating(t.id); return `<div class="card">
+    <div class="row between" style="margin-bottom:8px;padding:8px 10px;background:var(--gold-soft);border-radius:10px"><span class="small"><b>${L('تقييم الإدارة:', 'Admin rating:')}</b> ${t.adminRating ? `${stars(t.adminRating)} <b class="num">${(+t.adminRating).toFixed(1)}</b>` : `<span class="muted">${L('مش محدد', 'not set')}</span>`}</span>${can('tch.rating') ? `<button class="btn sm ghost" onclick="AD_rateTeacher('${t.id}')">${icon('edit')}</button>` : ''}</div>
+    <div class="row" style="margin-bottom:10px"><span class="av" style="background:${t.color}">${esc(initials(t.name))}</span><div><b>${esc(tName(t))}</b><div>${stars(a)} <b class="num">${a.toFixed(1)}</b> <span class="small muted">(${rs.length})</span></div></div></div>
     ${[5, 4, 3, 2, 1].map(n => { const c = rs.filter(r => r.stars === n).length; return `<div class="row" style="gap:8px;font-size:12px"><span class="num" style="width:14px">${n}</span><div class="bar gold" style="flex:1;height:7px"><i style="width:${rs.length ? c / rs.length * 100 : 0}%"></i></div><span class="num" style="width:16px">${c}</span></div>`; }).join('')}
     ${rs.filter(r => r.comment).slice(0, 2).map(r => `<div class="small" style="margin-top:8px;padding:8px;background:var(--bg);border-radius:8px">"${esc(r.comment)}" <span class="muted">— ${esc(stuById(r.studentId)?.parent || '')}</span></div>`).join('')}</div>`; }).join('')}</div>`;
 }
@@ -289,6 +302,7 @@ function AD_currency() {
 function AD_methods() {
   return `<div class="page-h"><div><div class="crumbs">${L('الإعدادات', 'Settings')}</div><h1>${L('طرق الدفع', 'Payment methods')}</h1><p>${L('اختار طرق الدفع اللي تظهر للعملاء وبياناتها', 'Choose which payment methods customers see, and their details')}</p></div></div>
   ${D.methods.map((m, i) => `<div class="card"><div class="row between"><div class="row"><div class="stat" style="padding:0;border:none;box-shadow:none"><div class="ic ${m.on ? 'ok' : 'gold'}">${icon(m.id === 'bank' ? 'card' : 'wallet')}</div></div><div><h3>${L(m.ar, m.en)}</h3><div class="small muted">${m.on ? L('ظاهرة للعملاء', 'Visible to customers') : L('مخفية', 'Hidden')}</div></div></div><label class="sw"><input type="checkbox" ${m.on ? 'checked' : ''} onchange="D.methods[${i}].on=this.checked;save();render()"><span></span></label></div>
+    <div style="margin-top:10px"><span class="small muted">${L('شعار طريقة الدفع (بيظهر في الذيل وصفحة الدفع):', 'Payment logo (shown in the footer and checkout):')}</span>${logoSlot('method', i)}</div>
     <div class="field" style="margin-top:12px;margin-bottom:0"><label>${L('بيانات الدفع اللي هتظهر للعميل', 'Payment details shown to customers')}</label><textarea class="input" onchange="D.methods[${i}].details=this.value;save();toast(L('تم الحفظ','Saved'),'ok')">${esc(m.details)}</textarea></div></div>`).join('')}`;
 }
 
@@ -318,12 +332,33 @@ function AD_pageSet(k, v) { const p = D.pages.find(x => x.id === AD.pageSel); p[
 function AD_savePageBody(notify) { const p = D.pages.find(x => x.id === AD.pageSel); const el = $('#pg_body'); if (!p || !el) return; p.body[AD.pageLang] = el.tagName === 'TEXTAREA' ? el.value : el.innerHTML; p.updated = new Date().toISOString(); save(); if (notify) toast(L('تم حفظ المحتوى', 'Content saved'), 'ok'); }
 function AD_newPage() { const p = { id: uid('pg'), slug: 'page-' + Math.random().toString(36).slice(2, 6), type: 'general', title: { ar: 'صفحة جديدة', en: 'New page' }, body: { ar: '<p>اكتب المحتوى هنا…</p>', en: '<p>Write content here…</p>' }, status: 'draft', footer: true, seo: { desc: '' }, updated: new Date().toISOString() }; D.pages.push(p); AD.pageSel = p.id; save(); render(); }
 
+/* ---------- logo / image uploads ---------- */
+function logoSlot(kind, key) {
+  const cur = kind === 'social' ? (D.social.logos || {})[key] : (D.methods[key] || {}).logo;
+  return `<div class="logo-slot"><span class="prev">${cur ? `<img src="${cur}" alt="">` : `<span class="tiny muted">${L('شعار', 'logo')}</span>`}</span>
+    <label class="btn sm ghost">${icon('upload')} ${cur ? L('تغيير الشعار', 'Change logo') : L('رفع الشعار', 'Upload logo')}<input type="file" accept="image/*" onchange="AD_upload('${kind}','${key}',this)"></label>
+    ${cur ? `<button class="btn sm bad ghost" onclick="AD_removeLogo('${kind}','${key}')">${icon('trash')}</button>` : ''}</div>`;
+}
+async function AD_upload(kind, key, input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  try {
+    if (kind === 'auth') { D.social.authImage = await fileToDataURL(f, 1100, 'image/jpeg', 0.82); }
+    else { const url = await fileToDataURL(f, 200, 'image/png'); if (kind === 'social') { D.social.logos = D.social.logos || {}; D.social.logos[key] = url; } else D.methods[+key].logo = url; }
+    save(); render(); toast(L('تم رفع الصورة ✓', 'Image uploaded ✓'), 'ok');
+  } catch (e) { toast(e.message, 'bad'); }
+}
+function AD_removeLogo(kind, key) { if (kind === 'social') { if (D.social.logos) delete D.social.logos[key]; } else delete D.methods[+key].logo; save(); render(); }
+
 /* ---------- social ---------- */
 function AD_social() {
   const f = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['linkedin', 'LinkedIn']];
   return `<div class="page-h"><div><div class="crumbs">${L('الإعدادات', 'Settings')}</div><h1>${L('السوشيال وبيانات التواصل', 'Social & contact')}</h1><p>${L('الروابط دي بتظهر في ذيل الموقع. سيب الخانة فاضية لإخفاء الأيقونة.', 'These links appear in the site footer. Leave empty to hide an icon.')}</p></div></div>
-  <div class="grid g2" style="align-items:start"><div class="card"><h3 style="margin-bottom:12px">${L('حسابات السوشيال', 'Social accounts')}</h3>${f.map(([k, l]) => `<div class="field"><label>${bicon(k, 14)} ${l}</label><input class="input" dir="ltr" value="${esc(D.social[k] || '')}" placeholder="https://" onchange="D.social['${k}']=this.value.trim();save();render()"></div>`).join('')}</div>
+  <div class="grid g2" style="align-items:start"><div class="card"><h3 style="margin-bottom:12px">${L('حسابات السوشيال', 'Social accounts')}</h3>${f.map(([k, l]) => `<div class="field"><label>${bicon(k, 14)} ${l}</label><input class="input" dir="ltr" value="${esc(D.social[k] || '')}" placeholder="https://" onchange="D.social['${k}']=this.value.trim();save();render()">${logoSlot('social', k)}</div>`).join('')}
+    <div class="notice info small">${icon('upload')} ${L('ارفع الشعار الرسمي لكل منصة (PNG أو SVG من صفحة الهوية الرسمية للشركة) عشان يظهر بألوانه في ذيل الموقع. لو مارفعتش شعار بيظهر رمز بسيط.', 'Upload each platform’s official logo (PNG or SVG from the company’s brand page) to show it in colour in the footer. Without one, a simple icon is shown.')}</div></div>
   <div><div class="card"><h3 style="margin-bottom:12px">${L('بيانات التواصل', 'Contact details')}</h3><div class="field"><label>${bicon('whatsapp', 14)} ${L('رقم الواتساب', 'WhatsApp number')}</label><input class="input" dir="ltr" value="${esc(D.social.whatsapp)}" onchange="D.social.whatsapp=this.value.trim();save();render()"></div><div class="field"><label>${L('رقم الهاتف', 'Phone')}</label><input class="input" dir="ltr" value="${esc(D.social.phone)}" onchange="D.social.phone=this.value.trim();save();render()"></div><div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" dir="ltr" value="${esc(D.social.email)}" onchange="D.social.email=this.value.trim();save();render()"></div></div>
+  <div class="card"><h3 style="margin-bottom:6px">${L('صورة صفحة الدخول', 'Login page image')}</h3><p class="small muted" style="margin-top:0">${L('بتظهر على يمين صفحة الدخول في البوابات الثلاثة. الأفضل صورة عرضية (مثلاً 1200×800).', 'Shown on the login page of all portals. A landscape image works best (e.g. 1200×800).')}</p>
+    <div class="auth-prev">${D.social.authImage ? `<img src="${D.social.authImage}" alt="">` : AUTH_ART}</div>
+    <div class="row" style="margin-top:10px"><label class="btn sm gold">${icon('upload')} ${L('رفع صورة', 'Upload image')}<input type="file" accept="image/*" style="display:none" onchange="AD_upload('auth','',this)"></label>${D.social.authImage ? `<button class="btn sm ghost" onclick="D.social.authImage='';save();render()">${L('رجوع للرسمة الافتراضية', 'Back to default illustration')}</button>` : ''}</div></div>
   <div class="card"><h3 style="margin-bottom:12px">${L('نبذة الذيل', 'Footer about text')}</h3><div class="field"><label>AR</label><textarea class="input" onchange="D.footerAbout.ar=this.value;save()">${esc(D.footerAbout.ar)}</textarea></div><div class="field"><label>EN</label><textarea class="input" dir="ltr" onchange="D.footerAbout.en=this.value;save()">${esc(D.footerAbout.en)}</textarea></div></div></div></div>`;
 }
 

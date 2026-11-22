@@ -13,7 +13,7 @@ const LIVE = { on: IS_LIVE, sb: null, profile: null, snap: {}, syncing: false, p
 const MAP = [
   { key: 'students', table: 'students', cols: { id: 'id', userId: 'user_id', name: 'name', parent: 'parent', stage: 'stage', grade: 'grade', country: 'country', active: 'active', confirmed: 'confirmed', provider: 'provider', joined: 'joined', addedBy: 'added_by', withdrawn: 'withdrawn' },
     skip: ['email', 'phone', 'pass'], ro: ['user_id', 'confirmed', 'provider'], priv: { table: 'student_private', fk: 'student_id', cols: { email: 'email', phone: 'phone' } } },
-  { key: 'teachers', table: 'teachers', cols: { id: 'id', userId: 'user_id', name: 'name', nameEn: 'name_en', bio: 'bio', bioEn: 'bio_en', youtube: 'youtube', zoom: 'zoom', color: 'color', camera: 'camera', active: 'active', badge: 'badge', addedStudents: 'added_students' },
+  { key: 'teachers', table: 'teachers', cols: { id: 'id', userId: 'user_id', name: 'name', nameEn: 'name_en', bio: 'bio', bioEn: 'bio_en', youtube: 'youtube', zoom: 'zoom', color: 'color', camera: 'camera', active: 'active', badge: 'badge', addedStudents: 'added_students', adminRating: 'admin_rating' },
     skip: ['email', 'phone', 'pass', 'subjects', 'rateLocked'], ro: ['user_id'], special: 'teachers', priv: { table: 'teacher_private', fk: 'teacher_id', cols: { email: 'email', phone: 'phone', rates: 'rates', rateLocked: 'rate_locked' } } },
   { key: 'staff', table: 'staff', cols: { id: 'id', userId: 'user_id', name: 'name', email: 'email', role: 'role' }, skip: ['pass'], ro: ['user_id'] },
   { key: 'subjects', table: 'subjects', cols: { id: 'id', key: 'key', stage: 'stage', ar: 'ar', en: 'en', icon: 'icon', visible: 'visible', pps: 'pps', countryPps: 'country_pps' } },
@@ -73,7 +73,8 @@ async function liveLoad() {
   N.messages.forEach(m => { if (bo[m.id]) m.original = bo[m.id]; });
   const st = Object.fromEntries(data.settings.map(r => [r.key, r.value]));
   SETTING_KEYS.forEach(k => { N[k] = st[k] !== undefined ? st[k] : defaults[k]; });
-  N.perms = Object.assign(defaultPerms(), N.perms || {});
+  const dp = defaultPerms(); const dbp = N.perms || {}; N.perms = {}; Object.keys(dp).forEach(r => { N.perms[r] = Object.assign({}, dp[r], dbp[r] || {}); });
+  N.teachers.forEach(t => { if (t.adminRating != null) t.adminRating = +t.adminRating; });
   D = N; takeSnapshot();
 }
 function takeSnapshot() {
@@ -150,9 +151,14 @@ async function liveBoot() {
     if (ev === 'PASSWORD_RECOVERY') setTimeout(liveNewPasswordModal, 300);
     if (ev === 'SIGNED_OUT') { LIVE.profile = null; APP.sessions = {}; render(); }
   });
-  await loadPublic();
+  await Promise.all([loadPublic(), liveProviders()]);
   if (session) await afterSignIn(); else { LIVE.ready = true; render(); }
   if (LIVE.bootMsg) setTimeout(() => toast(LIVE.bootMsg, 'ok'), 400);
+}
+// which social sign-ins are switched on in Supabase (public endpoint)
+async function liveProviders() {
+  try { const r = await fetch(SUPABASE_URL.replace(/\/$/, '') + '/auth/v1/settings', { headers: { apikey: SUPABASE_ANON_KEY } }); if (!r.ok) return;
+    const j = await r.json(); if (j && j.external) LIVE.providers = { google: !!j.external.google, facebook: !!j.external.facebook, apple: !!j.external.apple }; } catch (e) {}
 }
 async function loadPublic() {
   const sb = LIVE.sb; const [st, pg, sj] = await Promise.all([sb.from('settings').select('*'), sb.from('pages').select('*'), sb.from('subjects').select('*')]);
@@ -218,7 +224,7 @@ if (LIVE.on) {
     modal(L('افتح بريدك الإلكتروني 📩', 'Check your email 📩'), `<p>${L('بعتنا رسالة تأكيد على', 'We sent a confirmation link to')} <b class="num">${esc(f.email)}</b>.</p><p class="muted">${L('اضغط على الرابط اللي في الرسالة، وبعدين ارجع سجّل دخول. لو مش لاقيها شوف الـ Spam.', 'Click the link in the email, then come back and log in. Check Spam if you can’t find it.')}</p>`, `<button class="btn" onclick="closeModal()">${L('تمام', 'OK')}</button>`);
   };
   A_social = async function (p) {
-    if (p === 'yahoo') return toast(L('الدخول بياهو هيتضاف قريباً – استخدم البريد وكلمة المرور', 'Yahoo sign-in coming soon – use email & password'), 'bad');
+    if (LIVE.providers && LIVE.providers[p] === false) return modal(L('الدخول بـ ', 'Sign in with ') + (PROVIDER_NAME[p] || p), `<p style="margin-top:0">${L('الدخول بالحساب ده لسه بيتجهّز. سجّل دلوقتي بالإيميل وكلمة المرور، وبعدين تقدر تستخدمه.', 'This sign-in option is being set up. Please use email and password for now.')}</p>`, `<button class="btn" onclick="closeModal()">${L('تمام', 'OK')}</button>`);
     const { error } = await LIVE.sb.auth.signInWithOAuth({ provider: p, options: { redirectTo: location.origin + location.pathname } });
     if (error) toast(liveErr(error.message), 'bad');
   };

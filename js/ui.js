@@ -45,6 +45,7 @@ const BRAND_IC = {
   google: '<path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-3.9V7.4H3.1a10 10 0 0 0 0 9z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/>',
   yahoo: '<path fill="#6001D2" d="M2 6.5h4.2l2.5 6.3 2.5-6.3h4.1L9.1 20.5H5l1.7-4zM17.4 3.5h4.4L18 12.6h-4z"/><circle cx="16.3" cy="16" r="2.3" fill="#6001D2"/>',
 };
+const AUTH_ART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 380" role="img" aria-label="طالب بيذاكر أونلاين"> <defs> <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9BC45"/><stop offset="1" stop-color="#D4A12A"/></linearGradient> <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B3C93"/><stop offset="1" stop-color="#122F7A"/></linearGradient> <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E3B8"/><stop offset="1" stop-color="#E5CF93"/></linearGradient> </defs> <!-- soft background shapes --> <circle cx="300" cy="175" r="150" fill="#FFFFFF" opacity=".07"/> <circle cx="300" cy="175" r="105" fill="#FFFFFF" opacity=".06"/> <!-- floating icons --> <g opacity=".95"> <g transform="translate(70 70)"><rect width="58" height="44" rx="12" fill="#FFFFFF"/><path d="M14 32 l8-8 7 6 13-14" fill="none" stroke="#1F9D6B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g> <g transform="translate(420 58)"><circle r="26" cx="26" cy="26" fill="url(#g1)"/><path d="M26 13 l4 9 10 1-7.5 6.8 2.2 9.7L26 34.5l-8.7 5 2.2-9.7L12 23l10-1z" fill="#0B2463"/></g> <g transform="translate(445 165)"><rect width="56" height="40" rx="12" fill="#FFFFFF"/><circle cx="16" cy="20" r="3.5" fill="#0B2463"/><circle cx="28" cy="20" r="3.5" fill="#0B2463"/><circle cx="40" cy="20" r="3.5" fill="#0B2463"/><path d="M12 40 l-2 10 12-10z" fill="#FFFFFF"/></g> <g transform="translate(40 190)"><path d="M0 18 L34 2 L68 18 L34 34 Z" fill="url(#g1)"/><path d="M14 25 v12 c0 6 40 6 40 0 v-12" fill="#E9BC45"/><path d="M68 18 v18" stroke="#E9BC45" stroke-width="3"/><circle cx="68" cy="38" r="4" fill="#E9BC45"/></g> </g> <!-- desk --> <rect x="60" y="300" width="420" height="16" rx="8" fill="url(#desk)"/> <rect x="95" y="316" width="12" height="60" rx="4" fill="#C9A85A"/> <rect x="433" y="316" width="12" height="60" rx="4" fill="#C9A85A"/> <!-- books --> <rect x="96" y="284" width="88" height="16" rx="3" fill="#D64545"/> <rect x="104" y="268" width="80" height="16" rx="3" fill="#2F6FDB"/> <rect x="100" y="252" width="76" height="16" rx="3" fill="url(#g1)"/> <rect x="108" y="256" width="40" height="3" rx="1.5" fill="#FFFFFF" opacity=".7"/> <!-- plant --> <rect x="430" y="270" width="30" height="30" rx="6" fill="#FFFFFF"/> <path d="M445 270 C440 245 425 238 418 236 C430 246 436 256 445 270 Z" fill="#1F9D6B"/> <path d="M445 270 C452 242 466 236 474 233 C462 246 455 258 445 270 Z" fill="#26B47D"/> <path d="M445 270 C444 250 447 236 452 226 C452 242 449 256 445 270 Z" fill="#1F9D6B"/> <!-- laptop --> <path d="M236 300 L404 300 L418 306 L222 306 Z" fill="#C9D3EE"/> <rect x="246" y="168" width="148" height="132" rx="10" fill="#E8EDF8"/> <rect x="254" y="176" width="132" height="104" rx="6" fill="url(#scr)"/> <!-- teacher on screen --> <circle cx="320" cy="214" r="17" fill="#C68642"/> <path d="M302 210 c0-16 36-16 36 0 c0-12-8-20-18-20 s-18 8-18 20z" fill="#2B2B2B"/> <path d="M292 280 c2-22 14-34 28-34 s26 12 28 34z" fill="#E9BC45"/> <rect x="262" y="184" width="30" height="8" rx="4" fill="#D64545"/> <circle cx="267" cy="188" r="2" fill="#FFFFFF"/> <rect x="352" y="252" width="28" height="22" rx="4" fill="#0B2463" stroke="#FFFFFF" stroke-opacity=".5"/> <circle cx="366" cy="261" r="4.5" fill="#F1C27D"/> <path d="M358 274 c1-6 4-8 8-8 s7 2 8 8z" fill="#2F6FDB"/> <circle cx="320" cy="290" r="3" fill="#0B2463"/> <!-- student --> <path d="M120 300 C122 250 150 222 186 222 C222 222 246 250 248 300 Z" fill="#0B2463"/> <path d="M168 222 h36 v18 c0 8-36 8-36 0z" fill="#F1C27D"/> <circle cx="186" cy="188" r="34" fill="#F1C27D"/> <path d="M152 186 c-2-30 18-44 36-44 c22 0 38 14 36 40 c-6-14-20-22-36-22 c-14 0-28 10-36 26z" fill="#3A2A20"/> <!-- headphones --> <path d="M150 190 c0-30 16-50 36-50 s36 20 36 50" fill="none" stroke="#E9BC45" stroke-width="6" stroke-linecap="round"/> <rect x="142" y="182" width="14" height="26" rx="7" fill="#E9BC45"/> <rect x="216" y="182" width="14" height="26" rx="7" fill="#E9BC45"/> <path d="M223 206 q2 14 -12 18" fill="none" stroke="#E9BC45" stroke-width="3" stroke-linecap="round"/> <circle cx="209" cy="225" r="3.5" fill="#E9BC45"/> <!-- face --> <circle cx="198" cy="190" r="3" fill="#2B2B2B"/> <path d="M196 205 q8 5 14 0" fill="none" stroke="#B5651D" stroke-width="2.5" stroke-linecap="round"/> <!-- arm on desk --> <path d="M206 262 C228 272 250 284 262 298 L246 302 C232 292 214 284 200 278 Z" fill="#122F7A"/> <ellipse cx="258" cy="298" rx="12" ry="7" fill="#F1C27D"/> <!-- pencil --> <rect x="190" y="292" width="40" height="5" rx="2.5" fill="url(#g1)" transform="rotate(-8 210 294)"/> <!-- wifi waves --> <g transform="translate(320 120)" fill="none" stroke="#FFFFFF" stroke-linecap="round" opacity=".85"> <path d="M-30 0 a42 42 0 0 1 60 0" stroke-width="5"/> <path d="M-18 12 a26 26 0 0 1 36 0" stroke-width="5"/> <circle cx="0" cy="24" r="4" fill="#FFFFFF" stroke="none"/> </g> </svg> `;
 const bicon = (n, sz = 18) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}">${BRAND_IC[n] || ''}</svg>`;
 
 /* ---------- app state ---------- */
@@ -150,6 +151,19 @@ async function savePassword() {
   else { const u = currentUser(); if (u) { u.pass = p; save(); } }
   closeModal(); toast(L('تم تغيير كلمة المرور ✓', 'Password changed ✓'), 'ok');
 }
+/* ---------- logos & images uploaded by the admin ---------- */
+const payBadge = (m, dark) => m.logo ? `<span class="pay-logo" title="${esc(L(m.ar, m.en))}"><img src="${m.logo}" alt="${esc(L(m.ar, m.en))}"></span>` : `<span class="pill" style="background:#fff;color:var(--navy);${dark ? 'border:1px solid var(--line)' : ''}">${icon(m.id === 'bank' ? 'card' : 'wallet')} ${L(m.ar, m.en)}</span>`;
+function fileToDataURL(file, max = 160, type = 'image/png', q = 0.85) {
+  return new Promise((res, rej) => {
+    if (!file || !/^image\//.test(file.type)) return rej(new Error(L('اختار ملف صورة (PNG / JPG / SVG)', 'Choose an image file (PNG / JPG / SVG)')));
+    const fr = new FileReader(); fr.onerror = () => rej(new Error('read')); fr.onload = () => {
+      const img = new Image(); img.onerror = () => rej(new Error(L('الصورة مش مقروءة', 'Unreadable image')));
+      img.onload = () => { const r = Math.min(1, max / Math.max(img.width || max, img.height || max)); const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round((img.width || max) * r)); c.height = Math.max(1, Math.round((img.height || max) * r));
+        const x = c.getContext('2d'); if (type === 'image/jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); } x.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL(type, q)); };
+      img.src = fr.result; }; fr.readAsDataURL(file);
+  });
+}
 const waNum = () => { let d = String(D.social.whatsapp || '').replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '2' + d; return d; };
 const waBtn = () => `<a class="wa" href="https://wa.me/${waNum()}" target="_blank" rel="noopener">${bicon('whatsapp', 22)}<span>${L('تواصل معنا', 'Chat with us')}</span></a>`;
 
@@ -164,7 +178,7 @@ function footerHTML() {
       <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('روابط مهمة', 'Useful links')}</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">${pages.map(p => `<a style="color:#E4E9F6;text-decoration:none;cursor:pointer;font-size:13.5px" onclick="openPage('${p.slug}')">• ${esc(p.title[LANG] || p.title.ar)}</a>`).join('') || `<span class="small">${L('لا توجد صفحات منشورة', 'No published pages')}</span>`}</div></div>
       <div style="text-align:center"><img src="${LOGO_FULL}" alt="NEXIUM FUTURA ACADEMY" style="width:110px;border-radius:14px;background:#fff;padding:4px"><p style="font-size:13.5px;line-height:1.8;margin:12px auto 0;max-width:420px">${esc(D.footerAbout[LANG])}</p></div>
-      <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('طرق الدفع', 'Payment methods')}</h3><div class="chips">${methods.map(m => `<span class="pill" style="background:#fff;color:var(--navy)">${icon(m.id === 'bank' ? 'card' : 'wallet')} ${L(m.ar, m.en)}</span>`).join('')}</div>
+      <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('طرق الدفع', 'Payment methods')}</h3><div class="chips">${methods.map(m => payBadge(m)).join('')}</div>
         <h3 style="color:var(--gold-2);margin:18px 0 10px">${L('الدعم', 'Support')}</h3><div class="small">${L('من السبت للخميس 9 ص – 11 م', 'Sat–Thu 9 AM – 11 PM')}</div></div>
     </div>
     <div style="border-top:1px dashed rgba(255,255,255,.2);border-bottom:1px dashed rgba(255,255,255,.2);padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px">
@@ -173,7 +187,7 @@ function footerHTML() {
         <span class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35);cursor:default">${icon('phone')} <span class="num">${esc(D.social.phone)}</span></span>
         <a href="mailto:${esc(D.social.email)}" class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35)">${icon('mail')} ${esc(D.social.email)}</a>
       </div>
-      <div class="row" style="justify-content:center;gap:8px">${soc.map(k => `<a href="${esc(D.social[k])}" target="_blank" rel="noopener" title="${k}" style="width:38px;height:38px;border:1px solid rgba(255,255,255,.35);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff">${bicon(k, 17)}</a>`).join('')}</div>
+      <div class="row" style="justify-content:center;gap:8px">${soc.map(k => { const lg = (D.social.logos || {})[k]; return `<a href="${esc(D.social[k])}" target="_blank" rel="noopener" title="${k}" class="soc-ic ${lg ? 'has-logo' : ''}">${lg ? `<img src="${lg}" alt="${k}">` : bicon(k, 17)}</a>`; }).join('')}</div>
     </div>
     <div style="text-align:center;padding:14px;font-size:12.5px">${L('جميع الحقوق محفوظة', 'All rights reserved')} © NEXIUM FUTURA ACADEMY <span class="num">${new Date().getFullYear()}</span></div>
   </footer><style>@media(max-width:860px){.foot-grid{grid-template-columns:1fr!important;text-align:center}}</style>`;
@@ -214,12 +228,13 @@ function authHTML() {
   const art = `<div class="art"><div><img src="${LOGO_FULL}" style="width:120px;border-radius:16px;background:#fff;padding:4px" alt="logo">
     <h1>${P === 'student' ? L('تعليم بلا حدود،<br><em>لكل المراحل والمواد</em>', 'Learning without limits,<br><em>every stage, every subject</em>') : P === 'teacher' ? L('بوابة <em>المدرس</em>', 'Teacher <em>portal</em>') : L('لوحة <em>الإدارة</em>', 'Admin <em>panel</em>')}</h1>
     <p>${P === 'student' ? L('حصص مباشرة مع أفضل المدرسين من KG حتى الثانوية، ومتابعة كاملة لولي الأمر: الحضور، الواجبات، التقييم والشهادات.', 'Live sessions with top teachers from KG to secondary, and full parent follow-up: attendance, homework, evaluation and certificates.') : P === 'teacher' ? L('نظّم مواعيدك، سجّل الحضور، صحّح الواجبات وقيّم طلابك من مكان واحد.', 'Manage your times, attendance, homework and evaluations in one place.') : L('تحكم كامل في الصلاحيات، المدرسين، الطلاب، المدفوعات وصافي الربح.', 'Full control over permissions, teachers, students, payments and net profit.')}</p>
+    <div class="art-img">${D.social && D.social.authImage ? `<img src="${D.social.authImage}" alt="">` : AUTH_ART}</div>
     ${P === 'student' ? `<div class="feats"><div><b>${L('4 مراحل', '4 stages')}</b>${L('KG · ابتدائي · إعدادي · ثانوي', 'KG · Primary · Prep · Secondary')}</div><div><b>${L('بدون تعارض', 'No clashes')}</b>${L('احجز من المواعيد المتاحة فقط', 'Book only free times')}</div><div><b>${L('تقارير لولي الأمر', 'Parent reports')}</b>${L('حضور · تفاعل · واجب · التزام', 'Attendance · engagement · homework')}</div><div><b>${L('بعملة بلدك', 'Your currency')}</b>${L('ريال · جنيه · درهم · دينار', 'SAR · EGP · AED · KWD')}</div></div>` : ''}</div>
     <div class="small" style="opacity:.7;position:relative;z-index:1">© NEXIUM FUTURA ACADEMY</div></div>`;
   let form = '';
   if (P === 'student' && AUTH.mode === 'register') {
     form = `<h2 style="text-align:center">${L('إنشاء حساب جديد', 'Create an account')}</h2><p class="muted small" style="text-align:center;margin:4px 0 10px">${L('بيانات ولي الأمر والطالب', 'Parent and student details')}</p>
-      ${socialProviders().length ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>` : ''}
+      ${socialProviders().length ? `<div class="social">${socialProviders().map(socialBtn).join('')}</div><div class="or">${L('أو بالإيميل', 'or with email')}</div>` : ''}
       <div class="form-grid"><div class="field"><label class="req">${L('اسم ولي الأمر', 'Parent name')}</label><input class="input ${fBad('r_parent')}" id="r_parent" value="${fv('r_parent')}"></div><div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input ${fBad('r_name')}" id="r_name" value="${fv('r_name')}"></div></div>
       <div class="field"><label class="req">${L('البريد الإلكتروني', 'Email')}</label><input class="input ${fBad('r_email')}" id="r_email" type="email" dir="ltr" value="${fv('r_email')}"></div>
       <div class="form-grid"><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile number')}</label><input class="input ${fBad('r_phone')}" id="r_phone" dir="ltr" placeholder="05xxxxxxxx" value="${fv('r_phone')}"></div>
@@ -235,7 +250,7 @@ function authHTML() {
       : P === 'teacher' ? D.teachers.slice(0, 4).map(t => `<button class="btn sm ghost" onclick="A_demoLogin('${t.id}')">${esc(tName(t))}</button>`).join('')
         : D.staff.map(a => `<button class="btn sm ghost" onclick="A_demoLogin('${a.id}')">${roleName(a.role)}</button>`).join('');
     form = `<h2 style="text-align:center">${P === 'student' ? L('تسجيل الدخول', 'Log in') : P === 'teacher' ? L('دخول المدرس', 'Teacher login') : L('دخول الإدارة', 'Admin login')}</h2>
-      ${P === 'student' && socialProviders().length ? `<div class="social">${socialProviders().map(p => `<button onclick="A_social('${p}')">${bicon(p, 16)} ${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
+      ${P === 'student' && socialProviders().length ? `<div class="social">${socialProviders().map(socialBtn).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
       <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="l_email" dir="ltr" type="email" value="${fv('l_email')}"></div>
       <div class="field"><label>${L('كلمة المرور', 'Password')}</label><input class="input" id="l_pass" dir="ltr" type="password" onkeydown="if(event.key==='Enter')A_login()"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
@@ -252,7 +267,9 @@ function authHTML() {
   return `<div class="auth">${art}<div class="frm"><div class="box"><div style="text-align:end;margin-bottom:6px"><button class="btn sm ghost" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${icon('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button></div>
     <img src="${LOGO_FULL}" class="logo-full" alt="logo">${form}${portals}</div></div></div>${P === 'student' ? footerHTML() : ''}${waBtn()}`;
 }
-const socialProviders = () => IS_LIVE ? (typeof SOCIAL_LOGIN !== 'undefined' ? SOCIAL_LOGIN : []) : ['google', 'facebook', 'yahoo'];
+const socialProviders = () => IS_LIVE ? (typeof SOCIAL_LOGIN !== 'undefined' ? SOCIAL_LOGIN : []) : ['google', 'facebook', 'apple'];
+const PROVIDER_NAME = { google: 'Google', facebook: 'Facebook', apple: 'Apple' };
+const socialBtn = p => p === 'apple' ? `<button class="apple-btn" onclick="A_social('apple')">Apple</button>` : `<button onclick="A_social('${p}')">${bicon(p, 16)} ${PROVIDER_NAME[p] || p}</button>`;
 const gradeOpts = (st, sel) => (STAGES.find(s => s.id === st) || { grades: [] }).grades.map(g => `<option value="${g}" ${g === sel ? 'selected' : ''}>${gradeName(g)}</option>`).join('');
 function A_login() {
   authKeep(); AUTH.bad = [];
@@ -271,11 +288,11 @@ function A_demoLogin(id) {
   saveSession(); APP.view = APP.portal === 'admin' ? 'overview' : 'home'; render();
 }
 function A_social(p) {
-  const nm = { google: 'Google', facebook: 'Facebook', yahoo: 'Yahoo' }[p];
+  const nm = PROVIDER_NAME[p] || p;
   modal(L('الدخول عن طريق ', 'Continue with ') + nm, `<div class="notice info" style="margin-bottom:12px">${L('في النسخة الحقيقية هتفتح نافذة ' + nm + ' للموافقة. رقم الموبايل إجباري، فهنطلبه بعد الدخول.', 'In production a ' + nm + ' window opens. A mobile number is required, so we ask for it after sign-in.')}</div>
     <div class="field"><label class="req">${L('اسم ولي الأمر', 'Parent name')}</label><input class="input" id="so_parent" value="${p === 'google' ? 'Khaled Mostafa' : ''}"></div>
     <div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input" id="so_name"></div>
-    <div class="field"><label class="req">${L('البريد', 'Email')} (${nm})</label><input class="input" id="so_email" dir="ltr" value="new.parent@${p === 'google' ? 'gmail' : p === 'yahoo' ? 'yahoo' : 'outlook'}.com"></div>
+    <div class="field"><label class="req">${L('البريد', 'Email')} (${nm})</label><input class="input" id="so_email" dir="ltr" value="new.parent@${p === 'google' ? 'gmail' : p === 'apple' ? 'icloud' : 'outlook'}.com"></div>
     <div class="field"><label class="req">${L('رقم الموبايل', 'Mobile number')}</label><input class="input" id="so_phone" dir="ltr"></div>`,
     `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="A_socialDone('${p}')">${L('متابعة', 'Continue')}</button>`);
 }

@@ -115,13 +115,48 @@ on conflict (key) do update set value = excluded.value;
 
 ---
 
-## الجزء د (اختياري): الدخول بجوجل وفيسبوك
-- **جوجل:** Supabase ← **Authentication ← Providers ← Google**. محتاج تعمل OAuth Client من **Google Cloud Console**، وتحط فيه رابط الـ Callback اللي Supabase بيعرضه في نفس الصفحة، وبعدين تنسخ Client ID و Secret لـ Supabase.
-- **فيسبوك:** نفس الفكرة من **developers.facebook.com** (Create App ← Facebook Login).
-- لو مفعّلتهمش، الأزرار هتظهر لكن هتطلع رسالة خطأ. والتسجيل بالبريد شغال طبيعي.
-- **ياهو** مش مدعوم في Supabase، فزرّه بيختفي في النسخة الحقيقية.
+## الجزء د: الدخول بجوجل وفيسبوك وأبل
+الأزرار التلاتة بتظهر في صفحة التسجيل والدخول. لو واحد منهم لسه متفعّلش في Supabase، الزائر بيشوف رسالة إنه "بيتجهّز" ويستخدم الإيميل، فمش هتظهر أي صفحة خطأ.
+الـ **Callback URL** اللي هتحتاجه في الحالات التلاتة: `https://nvqrirctdfkcykkiokpb.supabase.co/auth/v1/callback`
+
+### جوجل (ببلاش)
+1. ادخل **console.cloud.google.com** واعمل مشروع جديد.
+2. **APIs & Services ← OAuth consent screen**: املا اسم التطبيق `NEXIUM FUTURA ACADEMY` وإيميل الدعم، واختار **External**.
+3. **Credentials ← Create Credentials ← OAuth client ID ← Web application**:
+   - **Authorized JavaScript origins:** `https://engaasal-code.github.io`
+   - **Authorized redirect URIs:** الـ Callback URL اللي فوق.
+4. انسخ **Client ID** و **Client Secret**.
+5. Supabase ← **Authentication ← Providers ← Google** ← فعّله والصقهم ← **Save**.
+
+### فيسبوك (ببلاش)
+1. **developers.facebook.com ← My Apps ← Create App**، واختار استخدام **Authenticate and request data from users with Facebook Login**.
+2. **Facebook Login ← Settings ← Valid OAuth Redirect URIs:** الـ Callback URL اللي فوق.
+3. **App settings ← Basic:** انسخ **App ID** و **App Secret**، وضيف رابط سياسة الخصوصية (`…/#page-privacy`).
+4. Supabase ← **Providers ← Facebook** ← فعّله والصقهم ← **Save**.
+5. حوّل التطبيق في فيسبوك من **Development** لـ **Live** عشان يشتغل مع كل الناس.
+
+### أبل (محتاج حساب Apple Developer – 99$ في السنة)
+1. **developer.apple.com ← Certificates, Identifiers & Profiles**:
+   - **Identifiers ← App IDs:** اعمل App ID وفعّل فيه **Sign in with Apple**.
+   - **Identifiers ← Services IDs:** اعمل Service ID وفعّل **Sign in with Apple**. في **Domains** حط `nvqrirctdfkcykkiokpb.supabase.co`، وفي **Return URLs** حط الـ Callback URL.
+   - **Keys:** اعمل Key بخاصية **Sign in with Apple** ونزّل ملف `.p8`.
+2. Supabase ← **Providers ← Apple** ← فعّله واملا **Services ID** و **Team ID** و **Key ID** ومحتوى ملف `.p8` ← **Save**.
+
+> عايز تخفي زرار معيّن؟ افتح `js/config.js` وشيله من السطر `const SOCIAL_LOGIN = ['google', 'facebook', 'apple'];`
 
 ---
+
+## الجزء هـ: الشعارات وصورة صفحة الدخول (من لوحة الإدارة)
+- **صورة صفحة الدخول:** الإدارة ← **السوشيال والتواصل** ← **صورة صفحة الدخول** ← **رفع صورة**. لو مارفعتش صورة، بتظهر رسمة الطالب الافتراضية.
+- **شعارات السوشيال:** في نفس الصفحة، تحت كل رابط فيه **رفع الشعار**. استخدم الشعار الرسمي من صفحة الهوية بتاعة كل شركة (Meta / X / TikTok / YouTube / LinkedIn).
+- **شعارات طرق الدفع:** الإدارة ← **طرق الدفع** ← **رفع الشعار** لكل طريقة (البنك، فودافون كاش، إنستاباي). الشعار بيظهر في ذيل الموقع وفي صفحة الدفع.
+- الصور بتتصغّر تلقائياً قبل الحفظ عشان الموقع يفضل سريع.
+
+## الجزء و: تقييم المدرس بالنجوم من الإدارة
+- الإدارة ← **المدرسين** ← **تقييم الإدارة** تحت تقييم كل مدرس، أو من صفحة **تقييمات المدرسين**.
+- لو حطيت تقييم، هو اللي بيظهر للطلاب بدل متوسط تقييمات أولياء الأمور. ولو شلته، بيرجع المتوسط.
+- الصلاحية اسمها **"تقييم المدرس بالنجوم من الإدارة"**. مفعّلة للرئيس التنفيذي ومدير المدرسة، وتقدر تغيّرها من **الصلاحيات**.
+- ⚠️ **لو مشروعك اتعمل قبل التحديث ده:** شغّل ملف `supabase/update_2.sql` مرة واحدة في SQL Editor.
 
 ## أسئلة شائعة ومشاكل
 | المشكلة | الحل |

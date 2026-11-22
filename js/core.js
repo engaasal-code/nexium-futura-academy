@@ -89,7 +89,8 @@ const PERM_GROUPS = [
     ['stu.delete', 'حذف طالب', 'Delete student'], ['stu.toggle', 'تفعيل / إيقاف حساب طالب', 'Activate / deactivate student']] },
   { ar: 'المدرسين', en: 'Teachers', items: [
     ['tch.view', 'عرض المدرسين', 'View teachers'], ['tch.add', 'إضافة مدرس', 'Add teacher'], ['tch.edit', 'تعديل بيانات المدرس ولينك اليوتيوب', 'Edit teacher & YouTube link'],
-    ['tch.delete', 'حذف / إيقاف مدرس', 'Delete / suspend teacher'], ['tch.rates', 'تعديل أجر المدرس', 'Edit teacher pay rates']] },
+    ['tch.delete', 'حذف / إيقاف مدرس', 'Delete / suspend teacher'], ['tch.rates', 'تعديل أجر المدرس', 'Edit teacher pay rates'],
+    ['tch.rating', 'تقييم المدرس بالنجوم من الإدارة', 'Set teacher star rating (admin)']] },
   { ar: 'الحصص والمواعيد', en: 'Sessions & schedule', items: [
     ['ses.slots', 'إضافة مواعيد متاحة', 'Add available slots'], ['ses.assign', 'إضافة طالب على حصة', 'Assign student to session'], ['ses.attend', 'تسجيل الحضور والغياب', 'Mark attendance'],
     ['ses.zoom', 'إضافة / تعديل لينك الزوم', 'Set Zoom link'], ['ses.cancel', 'إلغاء حصة محجوزة', 'Cancel booked session'], ['ses.viewall', 'عرض جداول كل المدرسين', 'View all teachers’ schedules']] },
@@ -302,7 +303,9 @@ const stuById = id => D.students.find(s => s.id === id);
 const tName = t => t ? (LANG === 'ar' ? t.name : (t.nameEn || t.name)) : '—';
 const initials = n => String(n || '?').replace(/^(أ\.|د\.|م\.|Mr\.|Ms\.|Dr\.)\s*/, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
 const countryBy = code => D.countries.find(c => c.code === code) || D.countries[0];
-const avgRating = tid => { const r = D.ratings.filter(x => x.teacherId === tid); return r.length ? r.reduce((a, b) => a + b.stars, 0) / r.length : 0; };
+const parentRating = tid => { const r = D.ratings.filter(x => x.teacherId === tid); return r.length ? r.reduce((a, b) => a + b.stars, 0) / r.length : 0; };
+// the admin's star rating (if set) is what students see; otherwise the parents' average
+const avgRating = tid => { const t = D.teachers.find(x => x.id === tid); return t && t.adminRating ? +t.adminRating : parentRating(tid); };
 const stars = (v, n = 5) => { let h = ''; for (let i = 1; i <= n; i++) h += i <= Math.round(v) ? '★' : '<span class="off">★</span>'; return `<span class="stars">${h}</span>`; };
 
 /* ---------- pricing ---------- */
