@@ -55,6 +55,9 @@ function fromRow(m, r) {
   return o;
 }
 
+// ترتيب ثابت للمواد (قاعدة البيانات بترجعها بأي ترتيب، فكانت بتتلخبط بعد كل حفظ)
+const subjRank = s => { const st = STAGES.findIndex(x => x.id === s.stage); const k = (STAGE_SUBJ[s.stage] || []).indexOf(s.key); return (st < 0 ? 99 : st) * 1000 + (k < 0 ? 500 : k); };
+const subjOrder = (a, b) => subjRank(a) - subjRank(b) || String(a.id).localeCompare(String(b.id));
 /* ---------- load everything this user is allowed to see ---------- */
 async function liveLoad() {
   const sb = LIVE.sb; const tables = [...MAP.map(m => m.table), 'student_private', 'teacher_private', 'settings', 'blocked_originals'];
@@ -63,6 +66,7 @@ async function liveLoad() {
   const defaults = seed();
   const N = { v: 1 };
   MAP.forEach(m => { N[m.key] = data[m.table].map(r => fromRow(m, r)); });
+  N.subjects.sort(subjOrder);
   const sp = Object.fromEntries(data.student_private.map(r => [r.student_id, r]));
   N.students.forEach(s => { const p = sp[s.id]; if (p) { s.email = p.email || ''; s.phone = p.phone || ''; } });
   const tp = Object.fromEntries(data.teacher_private.map(r => [r.teacher_id, r]));
@@ -76,6 +80,7 @@ async function liveLoad() {
   const dp = defaultPerms(); N.perms = Object.fromEntries(Object.keys(dp).map(r => [r, Object.assign({}, dp[r], (N.perms || {})[r] || {})]));
   N.home = homeMerge(N.home); Object.defineProperty(N.home, '__m', { value: true, enumerable: false });
   if (LIVE.profile?.role === 'ceo') { const rr = await sb.rpc('list_reset_requests'); N.resets = Array.isArray(rr.data) ? rr.data : []; } else N.resets = [];
+  if (['supervisor', 'principal', 'ceo'].includes(LIVE.profile?.role)) { const vs = await sb.rpc('visit_stats'); N.visits = Array.isArray(vs.data) ? vs.data : null; }
   D = N; takeSnapshot();
 }
 function takeSnapshot() {
@@ -119,7 +124,8 @@ async function liveSync() {
   LIVE.syncing = false;
   if (errors.length) { toast(liveErr(errors[0]), 'bad'); await liveReload(); }
   else takeSnapshot();
-  if (LIVE.pending) { LIVE.pending = false; liveSync(); }
+  if (LIVE.pending) { LIVE.pending = false; return liveSync(); }
+  return !errors.length;
 }
 function liveErr(msg) {
   const m = String(msg || '');
@@ -133,7 +139,7 @@ function liveErr(msg) {
     ['BAD_FILE', L('الملف مش مقبول – ارفعه تاني', 'File not accepted – please upload again')], ['CONTACT_NOT_ALLOWED', L('غير مسموح بكتابة بيانات تواصل', 'Contact details are not allowed')],
     ['INVITE_CODE', L('كود التفعيل غلط – اطلب كود جديد من الإدارة', 'Wrong activation code – ask the admin for a new one')], ['Database error saving new user', L('كود التفعيل غلط أو البريد مش مسجّل', 'Wrong activation code or email not registered')],
     ['PACKAGE_EXPIRED', L('صلاحية الباقة انتهت – جدّد الباقة', 'The package has expired – please renew')], ['NOT_YOUR_CHILD', L('الطالب ده مش مسجّل في حسابك', 'This student is not on your account')], ['TOO_MANY_CHILDREN', L('وصلت للحد الأقصى لعدد الأولاد', 'Maximum number of children reached')],
-    ['TOO_MANY_PENDING', L('عندك طلبات دفع كتير بانتظار المراجعة', 'Too many payments awaiting review')], ['REQUEST_CLOSED', L('الطلب ده اتقفل', 'This request is closed')], ['NO_INVITE', L('الحساب ده اتفعّل بالفعل', 'This account is already activated')],
+    ['TOO_MANY_PENDING', L('عندك طلبات دفع كتير بانتظار المراجعة', 'Too many payments awaiting review')], ['REQUEST_CLOSED', L('الطلب ده اتقفل', 'This request is closed')], ['NO_INVITE', L('الحساب ده اتفعّل بالفعل', 'This account is already activated')], ['NO_EMAIL', L('المدرس ده مالوش بريد مسجّل', 'This teacher has no email')], ['NOT_ALLOWED', L('العملية دي مش مسموحة', 'Not allowed')], ['Could not find the function', L('محتاج تحديث قاعدة البيانات – شغّل NEXIUM_DB_UPDATE_v4.sql في Supabase', 'Database update needed – run NEXIUM_DB_UPDATE_v4.sql in Supabase')],
     ['rate limit', L('محاولات كتير – استنى شوية وجرّب تاني', 'Too many attempts – wait a bit and retry')], ['Failed to fetch', L('مفيش اتصال بالإنترنت أو السيرفر', 'No connection to the server')], ['duplicate key', L('البيانات دي موجودة بالفعل', 'This already exists')]];
   const f = T.find(([k]) => m.toLowerCase().includes(k.toLowerCase())); return f ? f[1] : L('حصل خطأ: ', 'Error: ') + m;
 }
@@ -168,7 +174,7 @@ async function liveProviders() {
 async function loadPublic() {
   const sb = LIVE.sb; const [st, pg, sj] = await Promise.all([sb.from('settings').select('*'), sb.from('pages').select('*'), sb.from('subjects').select('*')]);
   const defaults = seed(); const map = Object.fromEntries((st.data || []).map(r => [r.key, r.value]));
-  D = { v: 1, subjects: (sj.data || []).map(r => fromRow(MAP.find(m => m.key === 'subjects'), r)), teachers: [], students: [], staff: [], sessions: [], enrollments: [], homework: [], evals: [], certs: [], ratings: [], messages: [], emails: [], payouts: [], expenses: [], withdrawals: [],
+  D = { v: 1, subjects: (sj.data || []).map(r => fromRow(MAP.find(m => m.key === 'subjects'), r)).sort(subjOrder), teachers: [], students: [], staff: [], sessions: [], enrollments: [], homework: [], evals: [], certs: [], ratings: [], messages: [], emails: [], payouts: [], expenses: [], withdrawals: [],
     pages: (pg.data || []).map(r => fromRow(MAP.find(m => m.key === 'pages'), r)) };
   SETTING_KEYS.forEach(k => { D[k] = map[k] !== undefined ? map[k] : defaults[k]; });
   D.home = homeMerge(D.home); Object.defineProperty(D.home, '__m', { value: true, enumerable: false });
@@ -179,6 +185,7 @@ async function afterSignIn() {
   let prof = null; for (let i = 0; i < 4 && !prof; i++) { const r = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle(); prof = r.data; if (!prof) await new Promise(r => setTimeout(r, 600)); }
   if (!prof) { toast(L('الحساب لسه بيتجهز – جرّب تاني بعد لحظات', 'Account is being prepared – retry in a moment'), 'bad'); LIVE.ready = true; return render(); }
   LIVE.profile = prof; LIVE.user = user;
+  if (prof.role !== 'student') { try { localStorage.setItem('nexium_staff', '1'); } catch (e) {} }   // أجهزة المدرسين والإدارة مش بتتحسب في الزيارات
   if (['supervisor', 'principal', 'ceo'].includes(prof.role) && !(await liveMfaPass(L('التحقق بخطوتين', '2-step verification'), afterSignIn))) { LIVE.ready = true; render(); return; }
   await liveLoad();
   APP.sessions = { [portalForRole(prof.role)]: prof.ref_id };
@@ -195,7 +202,7 @@ async function afterSignIn() {
 }
 function liveRealtime() {
   if (LIVE.channel) LIVE.sb.removeChannel(LIVE.channel);
-  let t = null; const bump = () => { clearTimeout(t); t = setTimeout(() => { if (!LIVE.syncing) liveReload(); }, 700); };
+  let t = null; const bump = () => { clearTimeout(t); t = setTimeout(() => { if (typeof SVB !== 'undefined' && SVB.dirty) { SVB.stale = true; return; } if (!LIVE.syncing) liveReload(); }, 700); };
   LIVE.channel = LIVE.sb.channel('nexium-live')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, bump)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, bump)
@@ -383,26 +390,45 @@ async function liveApproveReset(id) {
 }
 async function liveRejectReset(id) { const { error } = await LIVE.sb.rpc('reject_password_reset', { p_id: id }); if (error) return toast(liveErr(error.message), 'bad'); await liveLoad(); render(); toast(L('تم رفض الطلب', 'Request rejected')); }
 
-/* ---------- تفعيل حساب مدرس / إدارة: البريد + كود التفعيل ---------- */
+/* ---------- تفعيل الحساب لأول مرة ----------
+   المدرس: البريد اللي الإدارة سجّلته + كلمة مرور ← إيميل تأكيد ← دخول (من غير كود)
+   الإدارة (مشرف / مدير / رئيس تنفيذي): البريد + كود التفعيل + كلمة مرور (حماية إضافية ضد الاختراق) */
 function liveActivate() {
-  const who = APP.portal === 'teacher' ? L('المدرس', 'teacher') : L('الإدارة', 'admin');
-  modal(L('تفعيل الحساب لأول مرة', 'First-time activation'), `<p class="muted" style="margin-top:0">${L('استخدم نفس البريد اللي الإدارة سجّلته لك كـ', 'Use the same email the admin registered for you as')} ${who}، ${L('وكود التفعيل اللي وصلك من الإدارة.', 'and the activation code you received from the admin.')}</p>
+  const T = APP.portal === 'teacher';
+  modal(L('تفعيل الحساب لأول مرة', 'First-time activation'), `<p class="muted" style="margin-top:0">${T ? L('اكتب نفس البريد اللي الإدارة سجّلته لك واختار كلمة مرور. هيوصلك إيميل تأكيد – اضغط على الرابط اللي فيه وبعدين سجّل دخول.', 'Enter the email the admin registered for you and choose a password. You will get a confirmation email – click its link, then log in.') : L('استخدم نفس البريد اللي اتسجّل لك كحساب إدارة، وكود التفعيل اللي وصلك من صاحب المنصة.', 'Use the email registered for your admin account and the activation code you received from the owner.')}</p>
     <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="ac_e" dir="ltr" type="email"></div>
-    <div class="field"><label>${L('كود التفعيل', 'Activation code')}</label><input class="input num" id="ac_c" dir="ltr" placeholder="XXXX-XXXX-XXXX" style="letter-spacing:2px;text-transform:uppercase"></div>
+    ${T ? '' : `<div class="field"><label>${L('كود التفعيل', 'Activation code')}</label><input class="input num" id="ac_c" dir="ltr" placeholder="XXXX-XXXX-XXXX" style="letter-spacing:2px;text-transform:uppercase"></div>`}
     <div class="field"><label>${L('اختار كلمة مرور', 'Choose a password')}</label><input class="input" type="password" id="ac_p" dir="ltr" autocomplete="new-password" placeholder="${L('8 أحرف على الأقل – حروف وأرقام', '8+ characters – letters and numbers')}"></div>`,
     `<button class="btn gold" onclick="liveDoActivate()">${L('تفعيل', 'Activate')}</button>`);
 }
 async function liveDoActivate() {
-  const email = val('ac_e'), code = val('ac_c').toUpperCase(), password = val('ac_p');
-  if (!email || !code) return toast(L('اكتب البريد وكود التفعيل', 'Enter email and activation code'), 'bad');
+  const T = APP.portal === 'teacher';
+  const email = val('ac_e'), code = T ? '' : val('ac_c').toUpperCase(), password = val('ac_p');
+  if (!email || (!T && !code)) return toast(T ? L('اكتب البريد', 'Enter your email') : L('اكتب البريد وكود التفعيل', 'Enter email and activation code'), 'bad');
   const bad = pwProblem(password); if (bad) return toast(bad, 'bad');
   const { data: role } = await LIVE.sb.rpc('check_invite', { p_email: email, p_code: code });
-  const okRole = APP.portal === 'teacher' ? role === 'teacher' : ['supervisor', 'principal', 'ceo'].includes(role);
-  if (!okRole) return toast(L('البريد أو كود التفعيل غلط – تواصل مع الإدارة', 'Wrong email or activation code – contact the admin'), 'bad');
-  const { data, error } = await LIVE.sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname + '#' + APP.portal, data: { invite_code: code } } });
+  const okRole = T ? role === 'teacher' : ['supervisor', 'principal', 'ceo'].includes(role);
+  if (!okRole) return toast(T ? L('البريد ده مش متسجّل كمدرس – أو الحساب اتفعّل قبل كده (جرّب تسجّل دخول). لو المشكلة مستمرة كلّم الإدارة.', 'This email is not registered as a teacher – or it is already activated (try logging in). Otherwise contact the admin.') : L('البريد أو كود التفعيل غلط – تواصل مع صاحب المنصة', 'Wrong email or activation code – contact the owner'), 'bad');
+  const { data, error } = await LIVE.sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname + '#' + APP.portal, data: T ? {} : { invite_code: code } } });
   if (error) return toast(liveErr(error.message), 'bad');
   closeModal(); if (data.session) return afterSignIn();
-  modal(L('افتح بريدك الإلكتروني 📩', 'Check your email 📩'), `<p>${L('بعتنا رسالة تأكيد على', 'We sent a confirmation link to')} <b class="num">${esc(email)}</b>. ${L('اضغط على الرابط وبعدين سجّل دخول.', 'Click it, then log in.')}</p>`);
+  AUTH.form.l_email = email;
+  modal(L('افتح بريدك الإلكتروني 📩', 'Check your email 📩'), `<p>${L('بعتنا رسالة تأكيد على', 'We sent a confirmation link to')} <b class="num">${esc(email)}</b>.</p><p class="muted">${L('اضغط على الرابط اللي في الرسالة، وبعدين ارجع سجّل دخول بالبريد وكلمة المرور. لو مش لاقيها شوف الـ Spam.', 'Click the link in the email, then log in with your email and password. Check Spam if you can’t find it.')}</p>`, `<button class="btn" onclick="closeModal()">${L('تمام', 'OK')}</button>`);
+}
+// المدرس مش محتاج كود: الإدارة تبعتله رسالة فيها الخطوات (واتساب) أو تعيد إرسال الإيميل
+function liveTeacherInvite(tid) {
+  const t = tchById(tid); if (!t) return; const link = location.origin + location.pathname + '#teacher';
+  const msg = L(`مرحباً ${t.name || ''}،\nتمت إضافتك كمدرس في NEXIUM FUTURA ACADEMY.\n1) افتح ${link}\n2) اضغط "تفعيل الحساب لأول مرة"\n3) اكتب بريدك ${t.email} واختار كلمة مرور\n4) افتح إيميل التأكيد اللي هيوصلك واضغط على الرابط، وبعدين سجّل دخول.`, `Hello ${t.name || ''},\nYou have been added as a teacher at NEXIUM FUTURA ACADEMY.\n1) Open ${link}\n2) Click "First-time activation"\n3) Enter your email ${t.email} and choose a password\n4) Open the confirmation email, click the link, then log in.`);
+  const ph = String(t.phone || '').replace(/\D/g, ''); const intl = ph.startsWith('00') ? ph.slice(2) : ph.startsWith('0') ? (ph.length === 11 ? '2' + ph : '966' + ph.slice(1)) : ph;
+  modal(L('تفعيل حساب المدرس', 'Teacher activation'), `<p style="margin-top:0">${L('المدرس مش محتاج كود. بيفعّل حسابه بنفس بريده', 'Teachers need no code. They activate with their email')} <b dir="ltr" class="num">${esc(t.email)}</b> ${L('وتأكيد البريد.', 'and email confirmation.')}</p>
+    <div class="mail"><div class="mb" style="white-space:pre-line">${esc(msg)}</div></div>`,
+    `<button class="btn ghost" onclick="liveResendTeacherInvite('${tid}')">${icon('mail')} ${L('إعادة إرسال الإيميل', 'Resend email')}</button><button class="btn ghost" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(msg))}).then(()=>toast(L('تم النسخ','Copied'),'ok'))">${L('نسخ الرسالة', 'Copy message')}</button>${intl.length >= 9 ? `<a class="btn gold" href="https://wa.me/${intl}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${bicon('whatsapp', 16)} ${L('إرسال واتساب', 'Send on WhatsApp')}</a>` : ''}`);
+}
+async function liveResendTeacherInvite(tid) {
+  if (!IS_LIVE) return toast(L('في النسخة الحقيقية بس', 'Live mode only'));
+  const { data, error } = await LIVE.sb.rpc('resend_teacher_invite', { p_ref: tid });
+  if (error) return toast(liveErr(error.message), 'bad');
+  toast(L('اتبعت إيميل التفعيل على ', 'Activation email sent to ') + data, 'ok');
 }
 async function liveInviteCode(ref, phone, name) {
   const { data, error } = await LIVE.sb.rpc('invite_code', { p_ref: ref }); if (error) return toast(liveErr(error.message), 'bad');
@@ -423,14 +449,25 @@ async function liveMfaPass(title, next, opts = {}) {
   if (!(st.aal.nextLevel === 'aal2' && st.aal.currentLevel !== 'aal2') || !st.factor) return true;
   window.__mfaNext = next; window.__mfaKeep = opts.keep || null;
   modal(esc(title), `<div style="text-align:center"><div style="font-size:42px">🔐</div><p style="margin-top:4px">${L('افتح تطبيق المصادقة (Google Authenticator أو Microsoft Authenticator) واكتب الكود المكوّن من 6 أرقام.', 'Open your authenticator app and enter the 6-digit code.')}</p></div>
-    <input class="input num code-in" id="mfa_c" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" onkeydown="if(event.key==='Enter')liveMfaVerify('${st.factor.id}')">`,
+    ${mfaInput(`liveMfaVerify('${st.factor.id}')`)}`,
     `<button class="btn ghost" onclick="closeModal();logout()">${L('خروج', 'Log out')}</button><button class="btn gold" onclick="liveMfaVerify('${st.factor.id}')">${L('تأكيد', 'Verify')}</button>`);
   setTimeout(() => $('#mfa_c')?.focus(), 60); return false;
 }
+// الكود ممكن يتكتب بأرقام عربية (١٢٣) أو فيه مسافات – بنحوّله لأرقام إنجليزي 6 بس
+const mfaDigits = v => String(v || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '');
+function mfaErr(error) {
+  const m = String(error?.message || error || ''); const c = String(error?.code || '');
+  if (/invalid totp|mfa_verification_failed|invalid code/i.test(m + ' ' + c)) return L('الكود غلط. اتأكد إنك بتاخد الكود من سطر "NEXIUM" في التطبيق (مش كود حساب Gmail)، وإن ساعة الموبايل مضبوطة تلقائي، واكتب الكود قبل ما يتغير.', 'Wrong code. Use the code under the “NEXIUM” entry in the app (not your Gmail code), make sure the phone time is automatic, and type it before it changes.');
+  if (/expired/i.test(m)) return L('الكود انتهى – استنى الكود الجديد واكتبه', 'Code expired – wait for the new one');
+  if (/disabled|not enabled/i.test(m)) return L('التحقق بخطوتين مقفول في إعدادات Supabase: Authentication ← Multi-Factor ← فعّل TOTP (Enroll + Verify).', 'MFA is disabled in Supabase: Authentication → Multi-Factor → enable TOTP (enroll + verify).');
+  if (/aal2|reauth/i.test(m)) return L('سجّل خروج وادخل تاني وبعدين جرّب', 'Log out, log in again, then retry');
+  return liveErr(m);
+}
+const mfaInput = (onEnter) => `<input class="input num code-in" id="mfa_c" inputmode="numeric" autocomplete="one-time-code" maxlength="12" dir="ltr" placeholder="••••••" oninput="const d=mfaDigits(this.value);if(d.length===6&&!this.dataset.busy){this.dataset.busy=1;${onEnter}}" onkeydown="if(event.key==='Enter')${onEnter}">`;
 async function liveMfaVerify(factorId) {
-  const code = val('mfa_c').replace(/\D/g, ''); if (code.length !== 6) return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad');
+  const inp = $('#mfa_c'); const code = mfaDigits(inp?.value); if (code.length !== 6) { if (inp) delete inp.dataset.busy; return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad'); }
   const { error } = await LIVE.sb.auth.mfa.challengeAndVerify({ factorId, code });
-  if (error) { toast(L('الكود غلط أو انتهى – جرّب الكود الجديد', 'Wrong or expired code – try the new one'), 'bad'); const i = $('#mfa_c'); if (i) { i.value = ''; i.focus(); } return; }
+  if (error) { console.warn('MFA verify', error); toast(mfaErr(error), 'bad'); const i = $('#mfa_c'); if (i) { i.value = ''; delete i.dataset.busy; i.focus(); } return; }
   closeModal(); const keep = window.__mfaKeep; const n = window.__mfaNext; window.__mfaNext = null;
   if (keep) { liveNewPasswordModal(); Object.entries(keep).forEach(([k, v]) => { const e = document.getElementById(k); if (e) e.value = v; }); }
   if (n) n();
@@ -438,20 +475,31 @@ async function liveMfaVerify(factorId) {
 async function liveMfaEnroll() {
   try {
     const st = await liveMfaState();
-    for (const f of st.all.filter(x => x.status !== 'verified')) await LIVE.sb.auth.mfa.unenroll({ factorId: f.id });
-    const { data, error } = await LIVE.sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'NEXIUM ' + new Date().toISOString().slice(0, 16), issuer: 'NEXIUM FUTURA ACADEMY' });
-    if (error) return toast(liveErr(error.message), 'bad');
-    const qr = String(data.totp.qr_code || ''); const qrOk = /^data:image\/svg\+xml/.test(qr);
-    modal(L('تفعيل التحقق بخطوتين', 'Turn on 2-step verification'), `<ol class="small" style="padding-inline-start:18px;line-height:1.9;margin-top:0"><li>${L('نزّل تطبيق Google Authenticator أو Microsoft Authenticator على موبايلك.', 'Install Google Authenticator or Microsoft Authenticator on your phone.')}</li><li>${L('من التطبيق اختار "مسح رمز QR" وامسح الصورة دي.', 'In the app choose “Scan a QR code” and scan this.')}</li><li>${L('اكتب الكود المكوّن من 6 أرقام اللي ظهر في التطبيق.', 'Type the 6-digit code shown in the app.')}</li></ol>
-      <div style="text-align:center">${qrOk ? `<img src="${esc(qr)}" alt="QR" style="width:200px;height:200px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px">` : ''}<div class="tiny muted" style="margin-top:6px">${L('أو اكتب المفتاح ده يدوياً:', 'Or enter this key manually:')}</div><div class="num" dir="ltr" style="font-weight:700;letter-spacing:1px;word-break:break-all">${esc(data.totp.secret)}</div></div>
-      <input class="input num code-in" id="mfa_c" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="margin-top:12px" onkeydown="if(event.key==='Enter')liveMfaConfirm('${esc(data.id)}')">`,
-      `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="liveMfaConfirm('${esc(data.id)}')">${L('تفعيل', 'Turn on')}</button>`);
-  } catch (e) { console.error(e); toast(L('تعذّر بدء التفعيل', 'Could not start'), 'bad'); }
+    // لو فيه تفعيل لسه ما خلصش في نفس الجلسة → نعرض نفس الـ QR (عشان مايبقاش فيه أكتر من سطر في التطبيق)
+    let P = LIVE.mfaPending && st.all.some(x => x.id === LIVE.mfaPending.id && x.status !== 'verified') ? LIVE.mfaPending : null;
+    if (!P) {
+      for (const f of st.all.filter(x => x.status !== 'verified')) await LIVE.sb.auth.mfa.unenroll({ factorId: f.id });
+      const d = new Date(); const tag = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const issuer = `NEXIUM ${tag}`;
+      const { data, error } = await LIVE.sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'NEXIUM ' + d.toISOString().slice(0, 16), issuer });
+      if (error) return toast(mfaErr(error), 'bad');
+      P = LIVE.mfaPending = { id: data.id, qr: String(data.totp.qr_code || ''), secret: String(data.totp.secret || ''), issuer };
+    }
+    const qrOk = /^data:image\/svg\+xml/.test(P.qr); const me = LIVE.user?.email || currentUser()?.email || '';
+    const sec = P.secret.replace(/(.{4})/g, '$1 ').trim();
+    modal(L('تفعيل التحقق بخطوتين', 'Turn on 2-step verification'), `<div class="notice warn small" style="margin:0 0 12px">${icon('shield')} <div>${L('مهم: الكود لازم يكون من سطر جديد بيتعمل لما تمسح الصورة دي. كود حساب Gmail أو أي سطر NEXIUM قديم <b>مش هينفع</b> – امسح أي سطر NEXIUM قديم من التطبيق الأول.', 'Important: the code must come from the NEW entry created by scanning this image. Your Gmail code or any older NEXIUM entry <b>will not work</b> – delete old NEXIUM entries first.')}</div></div>
+      <ol class="small" style="padding-inline-start:18px;line-height:1.9;margin-top:0"><li>${L('افتح Google Authenticator أو Microsoft Authenticator واضغط ＋ ← "مسح رمز QR".', 'Open Google or Microsoft Authenticator, tap ＋ → “Scan a QR code”.')}</li><li>${L('امسح الصورة دي. هيظهر سطر جديد باسم:', 'Scan this image. A new entry appears named:')} <b dir="ltr" class="num">${esc(P.issuer)}</b> <span class="tiny muted" dir="ltr">(${esc(me)})</span></li><li>${L('اكتب الـ 6 أرقام اللي تحت السطر ده بالظبط.', 'Type the 6 digits shown under exactly that entry.')}</li></ol>
+      <div style="text-align:center">${qrOk ? `<img src="${esc(P.qr)}" alt="QR" style="width:200px;height:200px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px">` : ''}<div class="tiny muted" style="margin-top:6px">${L('أو اختار "إدخال مفتاح الإعداد" واكتب المفتاح ده (نوع: على أساس الوقت):', 'Or choose “Enter a setup key” and type this key (time-based):')}</div><div class="num" dir="ltr" style="font-weight:700;letter-spacing:1px;word-break:break-all">${esc(sec)} <button class="btn link tiny" onclick="navigator.clipboard.writeText('${esc(P.secret)}').then(()=>toast(L('تم نسخ المفتاح','Key copied'),'ok'))">${L('نسخ', 'Copy')}</button></div></div>
+      <div style="margin-top:12px">${mfaInput(`liveMfaConfirm('${esc(P.id)}')`)}</div><div class="tiny muted" style="margin-top:6px;text-align:center">${L('لو قال الكود غلط: اتأكد إن ساعة الموبايل "تلقائي" من الإعدادات، واستنى الكود الجديد.', 'If it says wrong: set the phone clock to automatic and wait for the next code.')}</div>`,
+      `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="liveMfaConfirm('${esc(P.id)}')">${L('تفعيل', 'Turn on')}</button>`);
+    setTimeout(() => $('#mfa_c')?.focus(), 60);
+  } catch (e) { console.error(e); toast(L('تعذّر بدء التفعيل – ', 'Could not start – ') + mfaErr(e), 'bad'); }
 }
 async function liveMfaConfirm(factorId) {
-  const code = val('mfa_c').replace(/\D/g, ''); if (code.length !== 6) return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad');
-  const { error } = await LIVE.sb.auth.mfa.challengeAndVerify({ factorId, code }); if (error) return toast(L('الكود غلط – تأكد من وقت الموبايل وجرّب الكود الجديد', 'Wrong code – check your phone’s time and try the new code'), 'bad');
-  closeModal(); LIVE.mfa = null; await liveLoad(); render(); toast(L('تم تفعيل التحقق بخطوتين ✓ حسابك بقى أأمن بكتير', '2-step verification is on ✓'), 'ok');
+  const inp = $('#mfa_c'); const code = mfaDigits(inp?.value); if (code.length !== 6) { if (inp) delete inp.dataset.busy; return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad'); }
+  const { error } = await LIVE.sb.auth.mfa.challengeAndVerify({ factorId, code });
+  if (error) { console.warn('MFA enroll verify', error); toast(mfaErr(error), 'bad'); if (inp) { inp.value = ''; delete inp.dataset.busy; inp.focus(); } return; }
+  LIVE.mfaPending = null; closeModal(); LIVE.mfa = null; await liveLoad(); render(); toast(L('تم تفعيل التحقق بخطوتين ✓ حسابك بقى أأمن بكتير', '2-step verification is on ✓'), 'ok');
 }
 async function liveMfaRemove(factorId) {
   confirmBox(L('إيقاف التحقق بخطوتين؟ حسابك هيبقى محمي بكلمة المرور بس.', 'Turn off 2-step verification? Your account will rely on the password only.'), async () => {

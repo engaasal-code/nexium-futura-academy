@@ -334,6 +334,8 @@ function toSAR(amount, cur) { if (cur === 'SAR') return amount; const c = D.coun
 function fromSAR(v, cur) { if (cur === 'SAR') return v; const c = D.countries.find(x => x.cur === cur); return c ? v * c.rate : v; }
 // التحكم في ظهور الأسعار: where = 'home' (الصفحة الرئيسية للزوار) أو 'students' (صفحات الطالب)
 const pricesOn = where => !(D.settings && D.settings.showPrices && D.settings.showPrices[where] === false);
+// سعر مادة معيّنة ظاهر؟ = الأسعار شغالة في المكان ده + المادة نفسها مش مقفول سعرها (المراحل والمواد ← إظهار السعر)
+const priceShown = (where, subject) => pricesOn(where) && !(subject && subject.hidePrice);
 const repC = () => countryBy(D.settings.reportCur === 'EGP' ? 'EG' : 'SA');
 const rep = vSAR => money(fromSAR(vSAR, repC().cur), repC());
 

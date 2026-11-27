@@ -15,8 +15,8 @@ function render() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 load(); loadSession();
 if (IS_LIVE) { APP.sessions = {}; const h = (location.hash || '').replace('#', ''); APP.portal = ['teacher', 'admin'].includes(h) ? h : 'student'; if (h.startsWith('page-')) APP.publicPage = h.slice(5); render();
-  liveBoot().catch(e => { console.error(e); LIVE.ready = true; render(); toast(L('تعذّر الاتصال بالسيرفر – راجع إعدادات config.js', 'Could not reach the server – check config.js'), 'bad'); }); }
-else onHash();
+  liveBoot().then(() => trackVisit()).catch(e => { console.error(e); LIVE.ready = true; render(); toast(L('تعذّر الاتصال بالسيرفر – راجع إعدادات config.js', 'Could not reach the server – check config.js'), 'bad'); }); }
+else { onHash(); trackVisit(); }
 window.addEventListener('hashchange', onHash);
 detectCountry().then(ok => { if (ok && (!IS_LIVE || LIVE.ready)) softRender(); });
 setInterval(() => { if (!$('#ov') && !document.activeElement?.matches('input,textarea,select,[contenteditable]') && currentUser() && ['home', 'overview'].includes(APP.view)) render(); }, 60000);

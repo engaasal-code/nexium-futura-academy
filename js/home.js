@@ -120,7 +120,7 @@ function landingHTML() {
       return `<section class="lp-sec lp-alt" id="lp-subjects"><div class="lp-in">${secHead(H.subjects)}
         <div class="lp-stages">${STAGES.map(s => `<button class="${LP.stage === s.id ? 'on' : ''}" onclick="LP.stage='${s.id}';render();setTimeout(()=>LP_go('subjects'),0)"><span>${s.e}</span>${L(s.ar, s.en)}</button>`).join('')}</div>
         <div class="lp-subjs">${subs.map((s, i) => { const p = pkgPrice(s, PACKAGES[1], C); const img = safeImg(s.image); const n = pts.filter(t => t.subjects.includes(s.id)).length;
-          return `<div class="lp-subj ${img ? 'has-img' : ''}" onclick="LP_auth('register')" style="${img ? '' : `background:${['#0B2463', '#122F7A', '#1F3F8F', '#A67812', '#C99A26', '#06173F'][i % 6]}`}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}<div class="lp-subj-tx">${img ? '' : `<span class="si">${esc(s.icon)}</span>`}<b>${esc(subjName(s))}</b><small>${pricesOn('home') ? `${L('من', 'from')} ${money(p.per, C)} / ${L('حصة', 'session')}` : ''}${n ? `${pricesOn('home') ? ' · ' : ''}${n} ${L('مدرس', 'teachers')}` : ''}</small></div></div>`; }).join('') || `<div class="muted">${L('لا توجد مواد ظاهرة في المرحلة دي', 'No visible subjects in this stage')}</div>`}</div></div></section>`; },
+          return `<div class="lp-subj ${img ? 'has-img' : ''}" onclick="LP_auth('register')" style="${img ? '' : `background:${['#0B2463', '#122F7A', '#1F3F8F', '#A67812', '#C99A26', '#06173F'][i % 6]}`}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}<div class="lp-subj-tx">${img ? '' : `<span class="si">${esc(s.icon)}</span>`}<b>${esc(subjName(s))}</b><small>${priceShown('home', s) ? `${L('من', 'from')} ${money(p.per, C)} / ${L('حصة', 'session')}` : ''}${n ? `${priceShown('home', s) ? ' · ' : ''}${n} ${L('مدرس', 'teachers')}` : ''}</small></div></div>`; }).join('') || `<div class="muted">${L('لا توجد مواد ظاهرة في المرحلة دي', 'No visible subjects in this stage')}</div>`}</div></div></section>`; },
     steps: () => `<section class="lp-sec" id="lp-steps"><div class="lp-in">${secHead(H.steps)}<div class="lp-steps">${(H.steps.items || []).map((s, i) => `<div class="lp-step"><div class="lp-step-n num">${i + 1}</div><div class="lp-step-ic">${esc(s.ic || '•')}</div><h3>${esc(tx(s.t))}</h3><p>${esc(tx(s.d))}</p></div>`).join('')}</div></div></section>`,
     teachers: () => { const ts = publicTeachers().sort((a, b) => (b.r.v * Math.min(b.r.n, 20)) - (a.r.v * Math.min(a.r.n, 20))).slice(0, +H.teachers.max || 8); if (!ts.length) return '';
       return `<section class="lp-sec lp-alt" id="lp-teachers"><div class="lp-in">${secHead(H.teachers)}<div class="lp-teachers">${ts.map(t => `<div class="lp-tch">${avatarHTML(t, 'lp-tch-av')}<h3>${esc(tName(t))}</h3>
@@ -183,36 +183,8 @@ function LP_revInit() {
   requestAnimationFrame(tick);
 }
 
-/* ---------- رفع الصور (الواجهة / المواد / المدرسين) ---------- */
-function pickImage(onDone, { folder = 'home', maxW = 1600, square = false } = {}) {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/jpeg,image/png,image/webp,image/gif';
-  inp.onchange = async () => {
-    const f = inp.files[0]; if (!f) return;
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) return toast(L('ارفع صورة JPG أو PNG أو WEBP', 'Upload a JPG, PNG or WEBP image'), 'bad');
-    if (f.size > 15 * 1024 * 1024) return toast(L('الصورة أكبر من 15 ميجا', 'Image is larger than 15 MB'), 'bad');
-    toast(L('جاري تجهيز الصورة…', 'Preparing image…'));
-    try {
-      const blob = await shrinkImage(f, IS_LIVE ? maxW : Math.min(maxW, 900), square, IS_LIVE ? 0.85 : 0.72);
-      if (!IS_LIVE) { const r = new FileReader(); r.onload = () => onDone(r.result); r.readAsDataURL(blob); return; }
-      const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${blob.type === 'image/png' ? 'png' : 'jpg'}`;
-      const { error } = await LIVE.sb.storage.from('site').upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: '31536000' });
-      if (error) return toast(liveErr(error.message), 'bad');
-      onDone(LIVE.sb.storage.from('site').getPublicUrl(path).data.publicUrl);
-    } catch (e) { console.error(e); toast(L('تعذّر قراءة الصورة', 'Could not read the image'), 'bad'); }
-  };
-  inp.click();
-}
-async function shrinkImage(file, maxW, square, q) {
-  const url = URL.createObjectURL(file); const img = new Image(); img.src = url; await img.decode(); URL.revokeObjectURL(url);
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-  if (square) { const m = Math.min(sw, sh); sx = (sw - m) / 2; sy = (sh - m) / 2; sw = sh = m; }
-  const k = Math.min(1, maxW / sw); const c = document.createElement('canvas'); c.width = Math.round(sw * k); c.height = Math.round(sh * k);
-  const g = c.getContext('2d'); const png = file.type === 'image/png' && !square;
-  if (!png) { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
-  g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
-  return await new Promise(res => c.toBlob(res, png ? 'image/png' : 'image/jpeg', q));
-}
-const imgField = (cur, onPick, onClear, opts = {}) => `<div class="img-field ${opts.round ? 'round' : ''}">${safeImg(cur) ? `<img src="${esc(safeImg(cur))}" alt="">` : `<div class="img-ph">${icon('upload')}<span>${L('مفيش صورة', 'No image')}</span></div>`}
+/* ---------- رفع الصور: js/images.js (المقاسات الثابتة لكل صورة) ---------- */
+const imgField = (cur, onPick, onClear, opts = {}) => `<div class="img-field ${opts.round ? 'round' : ''}">${opts.spec && onPick ? imgSpecHint(opts.spec) : ''}${safeImg(cur) ? `<img src="${esc(safeImg(cur))}" alt="">` : `<div class="img-ph">${icon('upload')}<span>${L('مفيش صورة', 'No image')}</span></div>`}
   ${onPick ? `<div class="row" style="gap:6px"><button type="button" class="btn sm gold" onclick="${onPick}">${icon('upload')} ${safeImg(cur) ? L('تغيير', 'Change') : L('رفع صورة', 'Upload')}</button>${safeImg(cur) && onClear ? `<button type="button" class="btn sm bad ghost" onclick="${onClear}">${icon('trash')}</button>` : ''}</div>` : ''}</div>`;
 
 /* ---------- محرّر الواجهة (لوحة الإدارة) ---------- */
@@ -222,7 +194,7 @@ function HE_set(path, v, rerender) {
   const ks = path.split('.'); let o = HOME(); ks.slice(0, -1).forEach(k => { if (o[k] == null) o[k] = /^\d+$/.test(k) ? [] : {}; o = o[k]; });
   o[ks[ks.length - 1]] = v; HE_save(); if (rerender) render();
 }
-function HE_save() { clearTimeout(window.__heS); window.__heS = setTimeout(() => { save(); toast(L('تم الحفظ ✓ وظهر في الواجهة', 'Saved ✓ – live on the homepage'), 'ok'); }, 400); }
+function HE_save() { save(); }
 function HE_img(path, opts) { pickImage(u => HE_set(path, u, true), opts); }
 function HE_list(path, act, i) {
   const a = HE_get(path); if (!Array.isArray(a)) return;
@@ -255,20 +227,20 @@ function HE_body(id) {
   const items = (path, render1) => { const a = HE_get(path) || []; return a.map((x, i) => `<div class="he-item"><div class="row between" style="margin-bottom:8px"><b class="small">#${i + 1}</b>${heListBar(path, i, a.length)}</div>${render1(x, i, path + '.' + i)}</div>`).join(''); };
   switch (id) {
     case 'hero': return `${heTxt('hero.title', L('العنوان الكبير', 'Headline'), { hint: RICH_HINT() })}${heTxt('hero.text', L('النص تحت العنوان', 'Sub text'), { area: true })}
-      <h4 class="he-h">${L('صور البانر', 'Banner images')} <span class="tiny muted">${L('(لو أكتر من صورة هتتغير تلقائياً كل 5 ثواني – المقاس المناسب 1200×900)', '(more than one image rotates every 5 s – best 1200×900)')}</span></h4>
-      <div class="he-imgs">${(H.hero.slides || []).map((s, i) => `<div class="he-item">${imgField(s.img, `HE_img('hero.slides.${i}.img',{folder:'home',maxW:1600})`, null)}${heListBar('hero.slides', i, H.hero.slides.length)}</div>`).join('')}</div>${heAdd('hero.slides', L('صورة جديدة', 'New image'))}
+      <h4 class="he-h">${L('صور البانر', 'Banner images')} <span class="tiny muted">${L('(لو أكتر من صورة هتتغير تلقائياً كل 5 ثواني)', '(more than one image rotates every 5 s)')}</span></h4>
+      <div class="he-imgs">${(H.hero.slides || []).map((s, i) => `<div class="he-item">${imgField(s.img, `HE_img('hero.slides.${i}.img',{spec:'hero'})`, null, { spec: 'hero' })}${heListBar('hero.slides', i, H.hero.slides.length)}</div>`).join('')}</div>${heAdd('hero.slides', L('صورة جديدة', 'New image'))}
       <h4 class="he-h">${L('المميزات (4 نقاط)', 'Feature points')}</h4>${items('hero.feats', (x, i, p) => `<div class="form-grid" style="grid-template-columns:90px 1fr">${heRaw(p + '.ic', L('أيقونة', 'Icon'))}${heTxt(p + '.t', L('النص', 'Text'))}</div>`)}${heAdd('hero.feats', add)}
       <h4 class="he-h">${L('الأزرار', 'Buttons')}</h4>${heTxt('hero.note', L('سطر ملاحظة فوق الزرار', 'Note above the button'), { hint: RICH_HINT() })}<div class="form-grid">${heTxt('hero.btn', L('الزرار الرئيسي (إنشاء حساب)', 'Main button (sign up)'))}${heTxt('hero.btn2', L('الزرار التاني (المواد)', 'Second button (subjects)'))}</div>`;
     case 'stats': return `${items('stats.items', (x, i, p) => `<div class="form-grid" style="grid-template-columns:140px 1fr">${heRaw(p + '.v', L('الرقم', 'Number'))}${heTxt(p + '.t', L('الوصف', 'Label'))}</div>`)}${heAdd('stats.items', add)}`;
     case 'why': return `${heTxt('why.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('why.sub', L('العنوان الفرعي', 'Subtitle'))}
-      ${items('why.items', (x, i, p) => `<div class="he-split"><div>${imgField(x.img, `HE_img('${p}.img',{folder:'home',maxW:500,square:true})`, `HE_set('${p}.img','',true)`)}<div class="tiny muted" style="margin-top:4px">${L('أو أيقونة:', 'or icon:')}</div>${heRaw(p + '.ic', '', { w: 90 })}</div><div>${heTxt(p + '.t', L('العنوان', 'Title'))}${heTxt(p + '.d', L('الوصف', 'Description'), { area: true })}</div></div>`)}${heAdd('why.items', add)}`;
+      ${items('why.items', (x, i, p) => `<div class="he-split"><div>${imgField(x.img, `HE_img('${p}.img',{spec:'why'})`, `HE_set('${p}.img','',true)`, { spec: 'why' })}<div class="tiny muted" style="margin-top:4px">${L('أو أيقونة:', 'or icon:')}</div>${heRaw(p + '.ic', '', { w: 90 })}</div><div>${heTxt(p + '.t', L('العنوان', 'Title'))}${heTxt(p + '.d', L('الوصف', 'Description'), { area: true })}</div></div>`)}${heAdd('why.items', add)}`;
     case 'subjects': return `${heTxt('subjects.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('subjects.sub', L('العنوان الفرعي', 'Subtitle'))}<div class="notice info">${icon('layers')} ${L('المواد والأسعار بتيجي تلقائياً من صفحة "المراحل والمواد" – ومن هناك كمان بتحط صورة لكل مادة.', 'Subjects and prices come from "Stages & subjects" – set each subject image there.')} <button class="btn link" onclick="go('subjects')">${L('فتح المراحل والمواد', 'Open subjects')}</button></div>`;
     case 'steps': return `${heTxt('steps.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('steps.sub', L('العنوان الفرعي', 'Subtitle'))}${items('steps.items', (x, i, p) => `<div class="form-grid" style="grid-template-columns:90px 1fr 1.4fr">${heRaw(p + '.ic', L('أيقونة', 'Icon'))}${heTxt(p + '.t', L('الخطوة', 'Step'))}${heTxt(p + '.d', L('الوصف', 'Description'))}</div>`)}${heAdd('steps.items', add)}`;
     case 'teachers': return `${heTxt('teachers.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('teachers.sub', L('العنوان الفرعي', 'Subtitle'))}${heRaw('teachers.max', L('أقصى عدد مدرسين يظهر', 'Max teachers shown'), { type: 'number', w: 200 })}<div class="notice info">${icon('cap')} ${L('بيظهر المدرسين المفعّلين بس، مترتبين حسب التقييم. صورة المدرس والتقييم المبدئي من صفحة "المدرسين".', 'Only active teachers appear, sorted by rating. Photos and initial ratings are set on the Teachers page.')}</div>`;
-    case 'join': return `<div class="he-split"><div>${imgField(H.join.img, `HE_img('join.img',{folder:'home',maxW:900})`, `HE_set('join.img','',true)`)}</div><div>${heTxt('join.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('join.text', L('النص', 'Text'), { area: true })}${heTxt('join.btn', L('الزرار', 'Button'))}<div class="tiny muted">${L('الزرار بيفتح صفحة "انضم كمدرس" لو منشورة، وإلا بيفتح الواتساب.', 'The button opens the “Teach with us” page if published, otherwise WhatsApp.')}</div></div></div>`;
+    case 'join': return `<div class="he-split"><div>${imgField(H.join.img, `HE_img('join.img',{spec:'join'})`, `HE_set('join.img','',true)`, { spec: 'join' })}</div><div>${heTxt('join.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('join.text', L('النص', 'Text'), { area: true })}${heTxt('join.btn', L('الزرار', 'Button'))}<div class="tiny muted">${L('الزرار بيفتح صفحة "انضم كمدرس" لو منشورة، وإلا بيفتح الواتساب.', 'The button opens the “Teach with us” page if published, otherwise WhatsApp.')}</div></div></div>`;
     case 'reviews': return `${heTxt('reviews.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('reviews.sub', L('العنوان الفرعي', 'Subtitle'))}
       <div class="field" style="max-width:260px"><label>${L('حركة الآراء التلقائية', 'Auto-scroll')}</label><select class="input" onchange="HE_set('reviews.speed',this.value)">${[['off', L('متوقفة', 'Off')], ['slow', L('بطيئة', 'Slow')], ['normal', L('عادية', 'Normal')], ['fast', L('سريعة', 'Fast')]].map(([k, t]) => `<option value="${k}" ${(HE_get('reviews.speed') || 'normal') === k ? 'selected' : ''}>${t}</option>`).join('')}</select><div class="tiny muted">${L('بالعربي بتتحرك يمين وبالإنجليزي شمال، وبتقف لما الزائر يقف عليها.', 'Moves right in Arabic and left in English; pauses when a visitor hovers.')}</div></div>
-      ${items('reviews.items', (x, i, p) => `<div class="he-split"><div>${imgField(x.img, `HE_img('${p}.img',{folder:'home',maxW:300,square:true})`, `HE_set('${p}.img','',true)`, { round: true })}</div><div><div class="form-grid">${heRaw(p + '.name', L('الاسم', 'Name'))}${heRaw(p + '.stars', L('النجوم (1-5)', 'Stars (1-5)'), { type: 'number' })}</div>${heTxt(p + '.role', L('الصفة', 'Role'))}${heTxt(p + '.text', L('الرأي', 'Review'), { area: true })}</div></div>`)}${heAdd('reviews.items', add)}`;
+      ${items('reviews.items', (x, i, p) => `<div class="he-split"><div>${imgField(x.img, `HE_img('${p}.img',{spec:'review'})`, `HE_set('${p}.img','',true)`, { round: true, spec: 'review' })}</div><div><div class="form-grid">${heRaw(p + '.name', L('الاسم', 'Name'))}${heRaw(p + '.stars', L('النجوم (1-5)', 'Stars (1-5)'), { type: 'number' })}</div>${heTxt(p + '.role', L('الصفة', 'Role'))}${heTxt(p + '.text', L('الرأي', 'Review'), { area: true })}</div></div>`)}${heAdd('reviews.items', add)}`;
     case 'faq': return `${heTxt('faq.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${items('faq.items', (x, i, p) => `${heTxt(p + '.q', L('السؤال', 'Question'))}${heTxt(p + '.a', L('الإجابة', 'Answer'), { area: true })}`)}${heAdd('faq.items', add)}`;
     case 'cta': return `${heTxt('cta.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('cta.text', L('النص', 'Text'))}${heTxt('cta.btn', L('الزرار', 'Button'))}`;
   }
@@ -276,7 +248,7 @@ function HE_body(id) {
 }
 function AD_home() {
   const H = HOME(); const names = Object.fromEntries(HOME_SECTIONS.map(s => [s[0], L(s[1], s[2])]));
-  return `<div class="page-h"><div><div class="crumbs">${L('المحتوى', 'Content')}</div><h1>${L('واجهة الموقع', 'Homepage')}</h1><p>${L('عدّل كل نص وصورة في الصفحة الرئيسية اللي بيشوفها الزوار. أي تعديل بيتحفظ لوحده وبيظهر فوراً.', 'Edit every text and image visitors see. Changes save automatically and go live immediately.')}</p></div>
+  return `<div class="page-h"><div><div class="crumbs">${L('المحتوى', 'Content')}</div><h1>${L('واجهة الموقع', 'Homepage')}</h1><p>${L('عدّل كل نص وصورة في الصفحة الرئيسية اللي بيشوفها الزوار. بعد ما تخلّص اضغط "حفظ التغييرات" فوق عشان تظهر على الموقع.', 'Edit every text and image visitors see. When done, click “Save changes” at the top to publish.')}</p></div>
     <div class="row"><div class="tabs" style="margin:0;padding:3px"><button class="${HE.lang === 'ar' ? 'on' : ''}" onclick="HE.lang='ar';render()">عربي</button><button class="${HE.lang === 'en' ? 'on' : ''}" onclick="HE.lang='en';render()">English</button></div>
     <a class="btn gold" href="${location.pathname}" target="_blank" rel="noopener">${icon('eye')} ${L('معاينة الواجهة', 'Preview homepage')}</a></div></div>
   <div class="he-list">${H.order.map((id, i) => { const off = H.off.includes(id); const open = HE.open === id; return `<div class="card he-sec ${off ? 'off' : ''}"><div class="row between">
@@ -285,6 +257,6 @@ function AD_home() {
       <label class="sw" title="${L('إظهار / إخفاء', 'Show / hide')}"><input type="checkbox" ${off ? '' : 'checked'} onchange="HE_sec('${id}','toggle')"><span></span></label></div></div>
       ${open ? `<div class="he-body">${HE_body(id)}</div>` : ''}</div>`; }).join('')}</div>
   <div class="card sec"><h3 style="margin-bottom:4px">${L('شعارات طرق الدفع (في آخر كل صفحة)', 'Payment logos (site footer)')}</h3><div class="small muted" style="margin-bottom:12px">${L('صورة واحدة فيها شعارات وسائل الدفع اللي بتقبلها. اعرض بس الوسائل المتاحة فعلاً للعملاء.', 'One image with the logos of the payment methods you accept. Show only methods customers can actually use.')}</div>
-    <div style="max-width:420px">${imgField(H.payLogos, "HE_img('payLogos',{folder:'home',maxW:1200})", "HE_set('payLogos','',true)")}</div>${H.payLogos !== 'assets/payments.png' ? `<button class="btn link small" onclick="HE_set('payLogos','assets/payments.png',true)">${L('رجّع الصورة الأصلية', 'Restore original image')}</button>` : ''}</div>
+    <div style="max-width:420px">${imgField(H.payLogos, "HE_img('payLogos',{spec:'payLogos'})", "HE_set('payLogos','',true)", { spec: 'payLogos' })}</div>${H.payLogos !== 'assets/payments.png' ? `<button class="btn link small" onclick="HE_set('payLogos','assets/payments.png',true)">${L('رجّع الصورة الأصلية', 'Restore original image')}</button>` : ''}</div>
   <div class="row between sec"><span class="small muted">${L('الهوية (الألوان والخط واللوجو) ثابتة على هوية NEXIUM.', 'Brand colours, font and logo follow the NEXIUM identity.')}</span><button class="btn bad ghost sm" onclick="HE_reset()">↺ ${L('إرجاع النصوص الافتراضية', 'Reset to defaults')}</button></div>`;
 }

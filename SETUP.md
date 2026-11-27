@@ -1,6 +1,19 @@
 # دليل تشغيل NEXIUM FUTURA ACADEMY كنسخة حقيقية
 
-> ## 🆕 تحديث v2 – لو المنصة شغالة عندك بالفعل اعمل الخطوات دي بس
+> ## 🆕 تحديث v4 (28 نوفمبر 2026) – لو المنصة شغالة عندك بالفعل اعمل الخطوات دي بس
+> 1. **قاعدة البيانات:** Supabase ← **SQL Editor ← New query** ← الصق محتوى `supabase/NEXIUM_DB_UPDATE_v4.sql` كله ← **Run**. لازم يظهر `تم التحديث ✓ – NEXIUM v4`.
+> 2. **الموقع:** ارفع كل ملفات المجلد على GitHub مكان القديمة (فيه 3 ملفات جديدة: `js/savebar.js` و `js/stats.js` و `js/images.js`). متغيّرش `js/config.js`.
+> 3. **إيميلات التأكيد (مهم جداً عشان المدرسين بقوا يفعّلوا بالإيميل بس):**
+>    - Supabase ← **Authentication ← Emails ← SMTP Settings** ← فعّل **Custom SMTP** (من غيره Supabase مش بيبعت إيميلات غير لأعضاء فريق المشروع بس).
+>      أسهل طريقة ببلاش من غير دومين: Gmail – **Host** `smtp.gmail.com` · **Port** `465` · **Username** = إيميل الجيميل · **Password** = "App password" من إعدادات حساب جوجل (Security ← 2-Step Verification ← App passwords).
+>    - بعدها: **Authentication ← Sign In / Providers ← Email** ← شغّل **Confirm email** ← Save.
+>    - لحد ما ده يتعمل: أي حد يعرف إيميل مدرس جديد لسه مفعّلش حسابه ممكن يفعّله مكانه – فاعمله قبل ما تضيف مدرسين جداد.
+> 4. **الرئيس التنفيذي الجديد** `nexiumfutura.education@gmail.com`: من حسابك ← **حسابات الإدارة** ← **كود التفعيل** جنبه ← ابعتله الكود. هو يفتح `#admin` ← **تفعيل الحساب لأول مرة** ← البريد + الكود + كلمة مرور، وبعدها يفعّل التحقق بخطوتين من **أمان حسابي**.
+> 5. **التحقق بخطوتين:** امسح أي سطر NEXIUM قديم من تطبيق Google Authenticator، وبعدين **أمان حسابي ← فعّل التحقق بخطوتين** وامسح الـ QR الجديد واكتب الكود اللي تحت السطر الجديد (مش كود حساب Gmail).
+>
+> ---
+
+> ## تحديث v2 (قديم – اتعمل بالفعل)
 > 1. **قاعدة البيانات:** Supabase ← **SQL Editor ← New query** ← الصق محتوى `supabase/update_v2.sql` ← **Run**. لازم يظهر `تم التحديث ✓ – NEXIUM v2`.
 > 2. **الموقع:** ارفع كل ملفات المجلد ده على GitHub مكان القديمة (فيه ملفات جديدة: `js/security.js` و `js/home.js` و `js/annotate.js` ومجلد `js/vendor` و `assets/hero.svg` و `assets/payments.png`). متغيّرش `js/config.js` لو بياناتك فيه سليمة.
 > 3. **إعدادات الأمان في Supabase** (مرة واحدة):

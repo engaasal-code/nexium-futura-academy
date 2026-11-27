@@ -635,3 +635,52 @@ html[data-theme=dark] ::-webkit-scrollbar{width:10px;height:10px} html[data-them
 .theme-btn svg{transition:transform .3s} .theme-btn:hover svg{transform:rotate(-20deg)}
 .hdr-out{gap:6px}
 @media(max-width:640px){.hdr .tools .lang{display:none}}
+
+/* ---------- شريط حفظ التغييرات (لوحة الإدارة) ---------- */
+.savebar{display:flex;align-items:center;gap:10px;border-radius:12px;margin-bottom:12px;font-size:13px;flex-wrap:wrap}
+.savebar.ok{color:var(--ok);padding:2px 4px;justify-content:flex-end;font-size:12.5px}
+.savebar.ok svg{width:15px;height:15px}
+.savebar.on{position:sticky;top:74px;z-index:25;background:var(--warn-soft);border:1.5px solid var(--gold);padding:10px 14px;box-shadow:0 10px 24px rgba(11,36,99,.14);animation:sbIn .25s ease}
+.savebar .sb-tx{display:flex;flex-direction:column;line-height:1.45}
+.savebar .sb-tx .small{color:var(--muted)}
+.sb-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(212,161,42,.25);flex:none}
+.sb-dot.spin{border:2px solid var(--gold);border-top-color:transparent;background:none;box-shadow:none;width:14px;height:14px;animation:sbSpin .8s linear infinite}
+@keyframes sbIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes sbSpin{to{transform:rotate(360deg)}}
+@media(max-width:720px){.savebar.on{top:70px}.savebar.on .btn.gold{flex:1}}
+tr.price-off td{background:var(--warn-soft)}
+.price-glob{border-color:#EED9A3}
+
+/* ---------- ملخص الشهر (نظرة عامة) ---------- */
+.ms-card{padding:18px 20px}
+.ms-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.ms-head h2{font-size:18px;margin:0 0 2px}
+.ms-head .btn.link svg{width:13px;height:13px;vertical-align:-2px}
+.ms-nav{display:flex;align-items:center;gap:8px}
+.ms-nav b{min-width:120px;text-align:center;font-size:14px}
+.ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.ms-tile{display:flex;align-items:center;gap:14px;padding:12px;border-radius:14px;transition:background .15s}
+.ms-tile:hover{background:var(--surface-2,rgba(11,36,99,.035))}
+.ms-ic{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.ms-ic svg{width:24px;height:24px}
+.ms-ring{flex:none}
+.ms-v{font-size:22px;font-weight:800;color:var(--heading);line-height:1.2}
+.ms-l{font-size:13px;color:var(--muted);margin-top:2px}
+.chg{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:20px;background:var(--line);color:var(--muted);margin-inline-start:4px;vertical-align:1px}
+.chg.up{background:var(--ok-soft);color:var(--ok)} .chg.down{background:var(--bad-soft);color:var(--bad)}
+.ms-bars{display:flex;align-items:flex-end;gap:3px;height:54px;margin-top:16px;padding:0 2px}
+.ms-bars i{flex:1;background:var(--navy);opacity:.82;border-radius:3px 3px 0 0;min-width:2px}
+.ms-bars i:hover{opacity:1;background:var(--gold)}
+.ms-bars i.fut{opacity:.15}
+.ms-bars-l{display:flex;justify-content:space-between;margin-top:4px}
+.ms-foot{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.ms-foot b{color:var(--heading)} .ms-foot .btn.link{margin-inline-start:auto}
+@media(max-width:1000px){.ms-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.ms-grid{grid-template-columns:1fr}.ms-tile{padding:8px 4px}}
+
+/* ---------- رفع الصور بالمقاسات + القص ---------- */
+.img-spec{color:var(--muted);background:var(--surface-2);border:1px dashed var(--line);border-radius:8px;padding:4px 8px;margin-bottom:6px;line-height:1.5}
+.crop-box{position:relative;width:100%;max-width:560px;margin:0 auto;overflow:hidden;border-radius:12px;background:#0b1430 repeating-conic-gradient(#1a2547 0 25%,#0f1a38 0 50%) 0 0/18px 18px;cursor:grab;touch-action:none;user-select:none;box-shadow:0 0 0 2px var(--gold)}
+.crop-box.round{max-width:340px;border-radius:50%}
+.crop-box.drag{cursor:grabbing}
+.crop-box img{position:absolute;left:0;top:0;max-width:none;pointer-events:none;transform-origin:0 0}
