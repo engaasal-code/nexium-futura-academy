@@ -114,7 +114,7 @@ function landingHTML() {
         <div class="row"><button class="btn gold lp-big" onclick="LP_auth('register')">${esc(tx(h.btn))}</button>${tx(h.btn2) ? `<button class="btn ghost lp-big" onclick="LP_go('subjects')">${esc(tx(h.btn2))}</button>` : ''}</div></div>
         <div class="lp-hero-art"><div class="lp-shape"></div><div class="lp-frame">${slides.map((u, i) => `<img src="${esc(u)}" class="${i === 0 ? 'on' : ''}" alt="" ${i ? 'loading="lazy"' : ''}>`).join('') || `<img class="on" src="assets/hero.svg" alt="">`}</div>
           ${slides.length > 1 ? `<div class="lp-dots">${slides.map((_, i) => `<button class="${i === 0 ? 'on' : ''}" onclick="LP_slide(${i})" aria-label="${i + 1}"></button>`).join('')}</div>` : ''}<div class="lp-dot-gold"></div></div></div></section>`; },
-    stats: () => `<section class="lp-stats"><div class="lp-in lp-stats-in">${(H.stats.items || []).map(s => `<div><b class="num">${esc(s.v)}</b><span>${esc(tx(s.t))}</span></div>`).join('')}</div></section>`,
+    stats: () => { setTimeout(LP_countInit, 30); return `<section class="lp-stats"><div class="lp-in lp-stats-in">${(H.stats.items || []).map(s => `<div><b class="num lp-count" data-v="${esc(s.v)}">${esc(s.v)}</b><span>${esc(tx(s.t))}</span></div>`).join('')}</div></section>`; },
     why: () => `<section class="lp-sec" id="lp-why"><div class="lp-in">${secHead(H.why)}<div class="lp-why">${(H.why.items || []).map(w => `<div class="lp-card">${safeImg(w.img) ? `<img class="lp-why-img" src="${esc(safeImg(w.img))}" alt="" loading="lazy">` : `<div class="lp-why-ic">${esc(w.ic || '★')}</div>`}<h3>${esc(tx(w.t))}</h3><p>${esc(tx(w.d))}</p></div>`).join('')}</div></div></section>`,
     subjects: () => { const C = displayCountry(null); const subs = D.subjects.filter(s => s.stage === LP.stage && s.visible); const pts = publicTeachers();
       return `<section class="lp-sec lp-alt" id="lp-subjects"><div class="lp-in">${secHead(H.subjects)}
@@ -138,6 +138,20 @@ function landingHTML() {
 }
 function secHead(o) { return `<div class="lp-head"><h2>${rich(tx(o.title))}</h2>${tx(o.sub) ? `<p>${esc(tx(o.sub))}</p>` : ''}</div>`; }
 function LP_slide(i) { const imgs = document.querySelectorAll('.lp-frame img'), dots = document.querySelectorAll('.lp-dots button'); if (!imgs.length) return; LP.slide = (i + imgs.length) % imgs.length; imgs.forEach((x, k) => x.classList.toggle('on', k === LP.slide)); dots.forEach((x, k) => x.classList.toggle('on', k === LP.slide)); }
+// stats count up from 1 to the final number when the strip scrolls into view (text like "+1000", "98%", "1,200" keeps its prefix/suffix)
+function LP_countInit() {
+  const els = [...document.querySelectorAll('.lp-count')]; if (!els.length) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const parse = v => { const m = /^(\D*?)(\d[\d,]*)(\.\d+)?(.*)$/.exec(v || ''); if (!m || m[3] || /^[\/:\d]/.test(m[4])) return null; const n = +m[2].replace(/,/g, ''); return n > 1 ? { pre: m[1], n, post: m[4], comma: m[2].includes(',') } : null; };
+  const fmt = (p, k) => p.pre + (p.comma ? k.toLocaleString('en-US') : k) + p.post;
+  const run = el => { const p = parse(el.dataset.v); if (!p || el.dataset.done) return; el.dataset.done = 1; const dur = 1800, t0 = performance.now();
+    const step = t => { if (!el.isConnected) return; const x = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(p, Math.max(1, Math.round(1 + (p.n - 1) * e))); if (x < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step); };
+  els.forEach(el => { const p = parse(el.dataset.v); if (p) el.textContent = fmt(p, 1); });
+  if (!('IntersectionObserver' in window)) return els.forEach(run);
+  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { run(en.target); io.unobserve(en.target); } }), { threshold: 0.4 });
+  els.forEach(el => io.observe(el));
+}
 function LP_heroInit() { clearInterval(window.__heroT); LP.slide = 0; if (document.querySelectorAll('.lp-frame img').length > 1) window.__heroT = setInterval(() => { if (!document.querySelector('.lp-frame')) return clearInterval(window.__heroT); LP_slide(LP.slide + 1); }, 5000); }
 function LP_scroll(d) { const el = document.getElementById('lp-revs'); if (el) el.scrollBy({ left: d * (LANG === 'ar' ? -1 : 1) * el.clientWidth * 0.8, behavior: 'smooth' }); }
 

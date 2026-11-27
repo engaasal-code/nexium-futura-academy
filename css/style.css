@@ -452,7 +452,7 @@ a.btn{text-decoration:none}
 .lp-stats{background:var(--navy);color:#fff}
 .lp-stats-in{display:grid;grid-template-columns:repeat(4,1fr);text-align:center;padding:26px 22px}
 .lp-stats-in>div{border-inline-end:1px solid rgba(255,255,255,.14)} .lp-stats-in>div:last-child{border:none}
-.lp-stats b{display:block;font-family:Montserrat,sans-serif;font-size:32px;color:var(--gold-2);line-height:1.2}
+.lp-stats b{display:block;font-family:Montserrat,sans-serif;font-size:32px;font-variant-numeric:tabular-nums;color:var(--gold-2);line-height:1.2}
 .lp-stats span{color:#C9D3EE;font-size:14px}
 .lp-sec{padding:72px 0}
 .lp-alt{background:var(--bg)}
