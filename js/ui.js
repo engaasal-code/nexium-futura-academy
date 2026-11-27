@@ -94,7 +94,7 @@ const statusPill = st => ({
 /* ---------- navigation ---------- */
 function go(view, params = {}) { APP.view = view; APP.params = params; APP.menuOpen = false; render(); window.scrollTo(0, 0); }
 function setLang(l) { LANG = l; saveSession(); render(); }
-function logout() { delete APP.sessions[APP.portal]; saveSession(); APP.view = 'home'; render(); }
+function logout() { delete APP.sessions[APP.portal]; saveSession(); APP.view = 'home'; APP.showAuth = false; render(); }
 function switchPortal(p) { location.hash = p === 'student' ? '' : p; if (p === 'student') onHash(); }
 function onHash() {
   const h = (location.hash || '').replace('#', '');
@@ -126,7 +126,7 @@ function headerHTML(u) {
       <button class="iconbtn lang" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')" title="Language">${LANG === 'ar' ? 'EN' : 'ع'}</button>
       ${APP.portal === 'student' ? `<button class="iconbtn" onclick="S_inbox()" title="${L('الإيميلات والتنبيهات', 'Emails & alerts')}">${icon('bell')}${unread ? `<span class="dot">${unread}</span>` : ''}</button>
       <button class="iconbtn hide-xs" onclick="go('chat')" title="${L('الرسائل', 'Messages')}">${icon('chat')}</button>` : ''}
-      <div class="me" onclick="go('${APP.portal === 'admin' ? 'overview' : 'settings'}')"><span class="av" style="background:${u.color || 'var(--navy)'}">${esc(initials(name))}</span><div class="tx"><div class="nm">${esc(name)}</div><div class="rl">${esc(sub)}</div></div></div>
+      <div class="me" onclick="go('${APP.portal === 'admin' ? 'overview' : 'settings'}')"><span class="av" style="background:${safeColor(u.color)}">${esc(initials(name))}</span><div class="tx"><div class="nm">${esc(name)}</div><div class="rl">${esc(sub)}</div></div></div>
     </div></div></header>`;
 }
 function sideHTML(items, tag) {
@@ -137,7 +137,7 @@ function sideHTML(items, tag) {
 /* ---------- change password (all portals) ---------- */
 function changePassword() {
   APP.menuOpen = false; const s = document.querySelector('.side'); if (s) s.classList.remove('open');
-  modal(L('تغيير كلمة المرور', 'Change password'), `<div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="cp_new" dir="ltr" placeholder="${L('6 أحرف على الأقل', 'at least 6 characters')}"></div>
+  modal(L('تغيير كلمة المرور', 'Change password'), `<div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="cp_new" dir="ltr" autocomplete="new-password" placeholder="${L('8 أحرف على الأقل – حروف وأرقام', '8+ characters – letters and numbers')}"></div>
     <div class="field"><label>${L('تأكيد كلمة المرور', 'Confirm password')}</label><input class="input" type="password" id="cp_new2" dir="ltr" onkeydown="if(event.key==='Enter')savePassword()"></div>
     <div class="tiny muted">${L('استخدم حروف وأرقام ورموز عشان تبقى أقوى.', 'Mix letters, numbers and symbols for a stronger password.')}</div>`,
     `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="savePassword()">${L('حفظ', 'Save')}</button>`);
@@ -145,14 +145,14 @@ function changePassword() {
 }
 async function savePassword() {
   const p = val('cp_new'), p2 = val('cp_new2');
-  if (p.length < 6) return toast(L('كلمة المرور 6 أحرف على الأقل', 'Password must be at least 6 characters'), 'bad');
+  if (pwProblem(p)) return toast(pwProblem(p), 'bad');
   if (p !== p2) return toast(L('كلمتين المرور مش متطابقين', 'Passwords do not match'), 'bad');
   if (IS_LIVE) { const { error } = await LIVE.sb.auth.updateUser({ password: p }); if (error) return toast(liveErr(error.message), 'bad'); }
   else { const u = currentUser(); if (u) { u.pass = p; save(); } }
   closeModal(); toast(L('تم تغيير كلمة المرور ✓', 'Password changed ✓'), 'ok');
 }
 /* ---------- logos & images uploaded by the admin ---------- */
-const payBadge = (m, dark) => m.logo ? `<span class="pay-logo" title="${esc(L(m.ar, m.en))}"><img src="${m.logo}" alt="${esc(L(m.ar, m.en))}"></span>` : `<span class="pill" style="background:#fff;color:var(--navy);${dark ? 'border:1px solid var(--line)' : ''}">${icon(m.id === 'bank' ? 'card' : 'wallet')} ${L(m.ar, m.en)}</span>`;
+const payBadge = (m, dark) => safeImg(m.logo) ? `<span class="pay-logo" title="${esc(L(m.ar, m.en))}"><img src="${esc(safeImg(m.logo))}" alt="${esc(L(m.ar, m.en))}"></span>` : `<span class="pill" style="background:#fff;color:var(--navy);${dark ? 'border:1px solid var(--line)' : ''}">${icon(m.id === 'bank' ? 'card' : 'wallet')} ${L(m.ar, m.en)}</span>`;
 function fileToDataURL(file, max = 160, type = 'image/png', q = 0.85) {
   return new Promise((res, rej) => {
     if (!file || !/^image\//.test(file.type)) return rej(new Error(L('اختار ملف صورة (PNG / JPG / SVG)', 'Choose an image file (PNG / JPG / SVG)')));
@@ -177,17 +177,17 @@ function footerHTML() {
     <div style="max-width:1150px;margin:0 auto;padding:40px 24px 18px;display:grid;grid-template-columns:1.1fr 1.3fr 1fr;gap:30px" class="foot-grid">
       <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('روابط مهمة', 'Useful links')}</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">${pages.map(p => `<a style="color:#E4E9F6;text-decoration:none;cursor:pointer;font-size:13.5px" onclick="openPage('${p.slug}')">• ${esc(p.title[LANG] || p.title.ar)}</a>`).join('') || `<span class="small">${L('لا توجد صفحات منشورة', 'No published pages')}</span>`}</div></div>
-      <div style="text-align:center"><img src="${LOGO_FULL}" alt="NEXIUM FUTURA ACADEMY" style="width:110px;border-radius:14px;background:#fff;padding:4px"><p style="font-size:13.5px;line-height:1.8;margin:12px auto 0;max-width:420px">${esc(D.footerAbout[LANG])}</p></div>
-      <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('طرق الدفع', 'Payment methods')}</h3><div class="chips">${methods.map(m => payBadge(m)).join('')}</div>
+      <div style="text-align:center"><img src="${LOGO_FULL}" alt="NEXIUM FUTURA ACADEMY" style="width:110px;border-radius:14px;background:#fff;padding:4px"><p style="font-size:13.5px;line-height:1.8;margin:12px auto 0;max-width:420px">${esc(D.footerAbout[LANG] || '')}</p></div>
+      <div><h3 style="color:var(--gold-2);margin-bottom:14px">${L('طرق الدفع', 'Payment methods')}</h3><div class="chips">${methods.map(m => payBadge(m)).join('')}</div>${typeof HOME === 'function' && safeImg(HOME().payLogos) ? `<div class="pay-logos"><img src="${esc(safeImg(HOME().payLogos))}" alt="${L('وسائل الدفع', 'Payment methods')}" loading="lazy"></div>` : ''}
         <h3 style="color:var(--gold-2);margin:18px 0 10px">${L('الدعم', 'Support')}</h3><div class="small">${L('من السبت للخميس 9 ص – 11 م', 'Sat–Thu 9 AM – 11 PM')}</div></div>
     </div>
     <div style="border-top:1px dashed rgba(255,255,255,.2);border-bottom:1px dashed rgba(255,255,255,.2);padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px">
       <div class="row" style="justify-content:center">
         <a href="${waLink}" target="_blank" rel="noopener" class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35)">${bicon('whatsapp', 15)} ${L('واتساب', 'WhatsApp')} <span class="num">${esc(D.social.whatsapp)}</span></a>
         <span class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35);cursor:default">${icon('phone')} <span class="num">${esc(D.social.phone)}</span></span>
-        <a href="mailto:${esc(D.social.email)}" class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35)">${icon('mail')} ${esc(D.social.email)}</a>
+        <a href="${esc(safeUrl('mailto:' + D.social.email, { allowMail: true }))}" class="btn sm ghost" style="color:#fff;border-color:rgba(255,255,255,.35)">${icon('mail')} ${esc(D.social.email)}</a>
       </div>
-      <div class="row" style="justify-content:center;gap:8px">${soc.map(k => { const lg = (D.social.logos || {})[k]; return `<a href="${esc(D.social[k])}" target="_blank" rel="noopener" title="${k}" class="soc-ic ${lg ? 'has-logo' : ''}">${lg ? `<img src="${lg}" alt="${k}">` : bicon(k, 17)}</a>`; }).join('')}</div>
+      <div class="row" style="justify-content:center;gap:8px">${soc.filter(k => safeUrl(D.social[k])).map(k => { const lg = safeImg((D.social.logos || {})[k]); return `<a href="${esc(safeUrl(D.social[k]))}" target="_blank" rel="noopener noreferrer" title="${k}" class="soc-ic ${lg ? 'has-logo' : ''}">${lg ? `<img src="${esc(lg)}" alt="${k}">` : bicon(k, 17)}</a>`; }).join('')}</div>
     </div>
     <div style="text-align:center;padding:14px;font-size:12.5px">${L('جميع الحقوق محفوظة', 'All rights reserved')} © NEXIUM FUTURA ACADEMY <span class="num">${new Date().getFullYear()}</span></div>
   </footer><style>@media(max-width:860px){.foot-grid{grid-template-columns:1fr!important;text-align:center}}</style>`;
@@ -202,7 +202,7 @@ function renderPublicPage(slug) {
     <button class="btn ghost sm" onclick="history.length>1?history.back():switchPortal('student')">${L('رجوع', 'Back')}</button></div></div>
     <div style="max-width:880px;margin:30px auto;padding:0 18px">
     ${ok ? `${p.status !== 'published' ? `<div class="notice warn" style="margin-bottom:14px">${L('معاينة: الصفحة دي مسودة ولسه مش ظاهرة للزوار', 'Preview: this page is a draft and is hidden from visitors')}</div>` : ''}
-      <div class="card" style="padding:30px"><div class="crumbs">${L('الرئيسية', 'Home')} › ${esc(p.title[LANG] || p.title.ar)}</div><h1 style="margin-bottom:16px">${esc(p.title[LANG] || p.title.ar)}</h1><div class="page-body">${p.type === 'html' ? (p.body[LANG] || p.body.ar) : (p.body[LANG] || p.body.ar)}</div></div>`
+      <div class="card" style="padding:30px"><div class="crumbs">${L('الرئيسية', 'Home')} › ${esc(p.title[LANG] || p.title.ar)}</div><h1 style="margin-bottom:16px">${esc(p.title[LANG] || p.title.ar)}</h1><div class="page-body">${cleanHTML(p.body[LANG] || p.body.ar)}</div></div>`
       : `<div class="card">${emptyBox(L('الصفحة غير موجودة أو غير منشورة', 'Page not found or not published'), 'page')}</div>`}
     </div>${footerHTML()}${waBtn()}<style>.page-body h2{margin:18px 0 8px}.page-body h3{margin:16px 0 6px}.page-body p,.page-body li{line-height:1.9}</style>`;
 }
@@ -217,7 +217,7 @@ function authKeep() {
   const labels = { r_parent: L('اسم ولي الأمر', 'Parent name'), r_name: L('اسم الطالب', 'Student name'), r_email: L('البريد الإلكتروني', 'Email'), r_phone: L('رقم الموبايل', 'Mobile number'), r_pass: L('كلمة المرور', 'Password') };
   AUTH.bad = Object.keys(labels).filter(k => document.getElementById(k) && !String(AUTH.form[k] || '').trim());
   if (document.getElementById('r_phone') && AUTH.form.r_phone && AUTH.form.r_phone.replace(/\D/g, '').length < 8) AUTH.bad.push('r_phone');
-  if (document.getElementById('r_pass') && AUTH.form.r_pass && AUTH.form.r_pass.length < 6) AUTH.bad.push('r_pass');
+  if (document.getElementById('r_pass') && AUTH.form.r_pass && pwProblem(AUTH.form.r_pass)) AUTH.bad.push('r_pass');
   if (document.getElementById('r_email') && AUTH.form.r_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(AUTH.form.r_email.trim())) AUTH.bad.push('r_email');
   AUTH.bad = [...new Set(AUTH.bad)];
   return AUTH.bad.map(k => labels[k]);
@@ -225,10 +225,11 @@ function authKeep() {
 function authMissingMsg(list) { return L('من فضلك راجع الخانات المعلّمة بالأحمر: ', 'Please check the fields marked in red: ') + list.join('، '); }
 function authHTML() {
   const P = APP.portal;
+  if (P === 'student' && !APP.showAuth && typeof landingHTML === 'function') return landingHTML();
   const art = `<div class="art"><div><img src="${LOGO_FULL}" style="width:120px;border-radius:16px;background:#fff;padding:4px" alt="logo">
     <h1>${P === 'student' ? L('تعليم بلا حدود،<br><em>لكل المراحل والمواد</em>', 'Learning without limits,<br><em>every stage, every subject</em>') : P === 'teacher' ? L('بوابة <em>المدرس</em>', 'Teacher <em>portal</em>') : L('لوحة <em>الإدارة</em>', 'Admin <em>panel</em>')}</h1>
     <p>${P === 'student' ? L('حصص مباشرة مع أفضل المدرسين من KG حتى الثانوية، ومتابعة كاملة لولي الأمر: الحضور، الواجبات، التقييم والشهادات.', 'Live sessions with top teachers from KG to secondary, and full parent follow-up: attendance, homework, evaluation and certificates.') : P === 'teacher' ? L('نظّم مواعيدك، سجّل الحضور، صحّح الواجبات وقيّم طلابك من مكان واحد.', 'Manage your times, attendance, homework and evaluations in one place.') : L('تحكم كامل في الصلاحيات، المدرسين، الطلاب، المدفوعات وصافي الربح.', 'Full control over permissions, teachers, students, payments and net profit.')}</p>
-    <div class="art-img">${D.social && D.social.authImage ? `<img src="${D.social.authImage}" alt="">` : AUTH_ART}</div>
+    <div class="art-img">${D.social && safeImg(D.social.authImage) ? `<img src="${esc(safeImg(D.social.authImage))}" alt="">` : AUTH_ART}</div>
     ${P === 'student' ? `<div class="feats"><div><b>${L('4 مراحل', '4 stages')}</b>${L('KG · ابتدائي · إعدادي · ثانوي', 'KG · Primary · Prep · Secondary')}</div><div><b>${L('بدون تعارض', 'No clashes')}</b>${L('احجز من المواعيد المتاحة فقط', 'Book only free times')}</div><div><b>${L('تقارير لولي الأمر', 'Parent reports')}</b>${L('حضور · تفاعل · واجب · التزام', 'Attendance · engagement · homework')}</div><div><b>${L('بعملة بلدك', 'Your currency')}</b>${L('ريال · جنيه · درهم · دينار', 'SAR · EGP · AED · KWD')}</div></div>` : ''}</div>
     <div class="small" style="opacity:.7;position:relative;z-index:1">© NEXIUM FUTURA ACADEMY</div></div>`;
   let form = '';
@@ -241,7 +242,7 @@ function authHTML() {
       <div class="field"><label class="req">${L('الدولة', 'Country')}</label><select class="input" id="r_country">${D.countries.map(c => `<option value="${c.code}" ${c.code === (AUTH.form.r_country || VISITOR_COUNTRY) ? 'selected' : ''}>${c.flag} ${L(c.ar, c.en)}</option>`).join('')}</select></div></div>
       <div class="form-grid"><div class="field"><label class="req">${L('المرحلة', 'Stage')}</label><select class="input" id="r_stage" onchange="document.getElementById('r_grade').innerHTML=gradeOpts(this.value)">${STAGES.filter(s => s.id !== 'summer').map(s => `<option value="${s.id}" ${s.id === (AUTH.form.r_stage || 'kg') ? 'selected' : ''}>${L(s.ar, s.en)}</option>`).join('')}</select></div>
       <div class="field"><label class="req">${L('الصف', 'Grade')}</label><select class="input" id="r_grade">${gradeOpts(AUTH.form.r_stage || 'kg', AUTH.form.r_grade)}</select></div></div>
-      <div class="field"><label class="req">${L('كلمة المرور', 'Password')}</label><input class="input ${fBad('r_pass')}" id="r_pass" type="password" dir="ltr" placeholder="${L('6 أحرف على الأقل', 'at least 6 characters')}" value="${fv('r_pass')}"></div>
+      <div class="field"><label class="req">${L('كلمة المرور', 'Password')}</label><input class="input ${fBad('r_pass')}" id="r_pass" type="password" dir="ltr" autocomplete="new-password" placeholder="${L('8 أحرف على الأقل – حروف وأرقام', '8+ characters – letters and numbers')}" value="${fv('r_pass')}"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
       <button class="btn gold block" onclick="A_register()">${L('إنشاء الحساب', 'Create account')}</button>
       <p class="small" style="text-align:center;margin-top:12px">${L('عندك حساب؟', 'Have an account?')} <button class="btn link" onclick="AUTH.mode='login';AUTH.err='';render()">${L('سجّل دخول', 'Log in')}</button></p>`;
@@ -252,7 +253,7 @@ function authHTML() {
     form = `<h2 style="text-align:center">${P === 'student' ? L('تسجيل الدخول', 'Log in') : P === 'teacher' ? L('دخول المدرس', 'Teacher login') : L('دخول الإدارة', 'Admin login')}</h2>
       ${P === 'student' && socialProviders().length ? `<div class="social">${socialProviders().map(socialBtn).join('')}</div><div class="or">${L('أو', 'or')}</div>` : '<div style="height:16px"></div>'}
       <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="l_email" dir="ltr" type="email" value="${fv('l_email')}"></div>
-      <div class="field"><label>${L('كلمة المرور', 'Password')}</label><input class="input" id="l_pass" dir="ltr" type="password" onkeydown="if(event.key==='Enter')A_login()"></div>
+      <div class="field"><label>${L('كلمة المرور', 'Password')}</label><input class="input" id="l_pass" dir="ltr" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')A_login()"></div>
       ${AUTH.err ? `<div class="notice bad" style="margin-bottom:10px">${AUTH.err}</div>` : ''}
       <button class="btn block" onclick="A_login()">${L('دخول', 'Log in')}</button>
       ${IS_LIVE ? `<div class="row between small" style="margin-top:10px"><button class="btn link" onclick="liveForgot()">${L('نسيت كلمة المرور؟', 'Forgot password?')}</button>${P !== 'student' ? `<button class="btn link" onclick="liveActivate()">${L('تفعيل الحساب لأول مرة', 'First-time activation')}</button>` : ''}</div>` : ''}
@@ -264,7 +265,7 @@ function authHTML() {
     <button class="btn sm ${P === 'student' ? '' : 'ghost'}" onclick="switchPortal('student')">${L('الطالب / ولي الأمر', 'Student / parent')}</button>
     <button class="btn sm ${P === 'teacher' ? '' : 'ghost'}" onclick="switchPortal('teacher')">${L('المدرس', 'Teacher')} <span class="num tiny">#teacher</span></button>
     <button class="btn sm ${P === 'admin' ? '' : 'ghost'}" onclick="switchPortal('admin')">${L('الإدارة', 'Admin')} <span class="num tiny">#admin</span></button></div>`;
-  return `<div class="auth">${art}<div class="frm"><div class="box"><div style="text-align:end;margin-bottom:6px"><button class="btn sm ghost" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${icon('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button></div>
+  return `<div class="auth">${art}<div class="frm"><div class="box"><div class="row between" style="margin-bottom:6px">${P === 'student' ? `<button class="btn sm ghost" onclick="APP.showAuth=false;render();window.scrollTo(0,0)">${LANG === 'ar' ? '→' : '←'} ${L('الصفحة الرئيسية', 'Home page')}</button>` : '<span></span>'}<button class="btn sm ghost" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${icon('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button></div>
     <img src="${LOGO_FULL}" class="logo-full" alt="logo">${form}${portals}</div></div></div>${P === 'student' ? footerHTML() : ''}${waBtn()}`;
 }
 const socialProviders = () => IS_LIVE ? (typeof SOCIAL_LOGIN !== 'undefined' ? SOCIAL_LOGIN : []) : ['google', 'facebook', 'apple'];
@@ -309,7 +310,7 @@ function A_register() {
   if (!f.parent || !f.name || !f.email || !f.phone || !f.pass) AUTH.err = L('كل الحقول المعلّمة بـ * مطلوبة', 'All * fields are required');
   else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) AUTH.err = L('البريد الإلكتروني غير صحيح', 'Invalid email');
   else if (f.phone.replace(/\D/g, '').length < 8) AUTH.err = L('رقم الموبايل غير صحيح', 'Invalid mobile number');
-  else if (f.pass.length < 6) AUTH.err = L('كلمة المرور 6 أحرف على الأقل', 'Password must be 6+ characters');
+  else if (pwProblem(f.pass)) AUTH.err = pwProblem(f.pass);
   else if (D.students.some(s => s.email.toLowerCase() === f.email.toLowerCase())) AUTH.err = L('البريد مسجّل بالفعل', 'Email already registered');
   else {
     const s = { id: uid('s'), ...f, confirmed: false, provider: 'email', active: true, joined: new Date().toISOString() };
@@ -345,7 +346,8 @@ function monthCal(year, month, eventsByDay, opts = {}) {
   }
   return `<div class="mcal">${h}</div>`;
 }
+const calState = k => ({ TCAL: typeof TCAL !== 'undefined' ? TCAL : null, SCAL: typeof SCAL !== 'undefined' ? SCAL : null, ACAL: typeof ACAL !== 'undefined' ? ACAL : null })[k];
 function calNav(stateKey, label) {
   return `<div class="row between" style="margin-bottom:12px"><div class="row"><button class="btn sm ghost" onclick="${stateKey}.m--;if(${stateKey}.m<0){${stateKey}.m=11;${stateKey}.y--};render()">‹</button><button class="btn sm ghost" onclick="${stateKey}.m++;if(${stateKey}.m>11){${stateKey}.m=0;${stateKey}.y++};render()">›</button><button class="btn sm gold" onclick="${stateKey}.y=new Date().getFullYear();${stateKey}.m=new Date().getMonth();render()">${L('اليوم', 'Today')}</button></div>
-    <h2>${new Date(eval(stateKey).y, eval(stateKey).m, 1).toLocaleDateString(LANG === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}</h2><span class="small muted">${label || ''}</span></div>`;
+    <h2>${new Date(calState(stateKey).y, calState(stateKey).m, 1).toLocaleDateString(LANG === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}</h2><span class="small muted">${label || ''}</span></div>`;
 }
