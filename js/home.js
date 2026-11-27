@@ -130,7 +130,7 @@ function landingHTML() {
     join: () => { const j = H.join; const img = safeImg(j.img); const teach = D.pages.find(p => p.slug === 'teach' && p.status === 'published');
       return `<section class="lp-join" id="lp-join"><div class="lp-in lp-join-in">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<div class="lp-join-art">👩‍🏫</div>`}<div><h2>${rich(tx(j.title))}</h2><p>${esc(tx(j.text))}</p>
         ${teach ? `<button class="btn gold lp-big" onclick="openPage('teach')">${esc(tx(j.btn))}</button>` : `<a class="btn gold lp-big" href="https://wa.me/${waNum()}" target="_blank" rel="noopener">${bicon('whatsapp', 18)} ${esc(tx(j.btn))}</a>`}</div></div></section>`; },
-    reviews: () => (H.reviews.items || []).length ? `<section class="lp-sec" id="lp-reviews"><div class="lp-in">${secHead(H.reviews)}<div class="lp-rev-wrap"><button class="iconbtn lp-arr" onclick="LP_scroll(-1)">‹</button><div class="lp-revs" id="lp-revs">${H.reviews.items.map(r => `<div class="lp-rev"><div class="lp-q">“</div><p>${esc(tx(r.text))}</p><div class="row" style="gap:10px;margin-top:auto">${safeImg(r.img) ? `<img class="av-img" src="${esc(safeImg(r.img))}" alt="" loading="lazy">` : `<span class="av">${esc(initials(r.name))}</span>`}<div><b>${esc(r.name)}</b><div class="tiny muted">${esc(tx(r.role))}</div></div><span class="sp" style="flex:1"></span>${stars(+r.stars || 5)}</div></div>`).join('')}</div><button class="iconbtn lp-arr" onclick="LP_scroll(1)">›</button></div></div></section>` : '',
+    reviews: () => (H.reviews.items || []).length ? `<section class="lp-sec" id="lp-reviews"><div class="lp-in">${secHead(H.reviews)}<div class="lp-rev-wrap"><button class="iconbtn lp-arr" onclick="LP_scroll(-1)">‹</button><div class="lp-revs" id="lp-revs">${(revAuto() && H.reviews.items.length > 1 ? [...H.reviews.items, ...H.reviews.items] : H.reviews.items).map((r, k) => `<div class="lp-rev${k >= H.reviews.items.length ? ' clone' : ''}"${k >= H.reviews.items.length ? ' aria-hidden="true"' : ''}><div class="lp-q">“</div><p>${esc(tx(r.text))}</p><div class="row" style="gap:10px;margin-top:auto">${safeImg(r.img) ? `<img class="av-img" src="${esc(safeImg(r.img))}" alt="" loading="lazy">` : `<span class="av">${esc(initials(r.name))}</span>`}<div><b>${esc(r.name)}</b><div class="tiny muted">${esc(tx(r.role))}</div></div><span class="sp" style="flex:1"></span>${stars(+r.stars || 5)}</div></div>`).join('')}</div><button class="iconbtn lp-arr" onclick="LP_scroll(1)">›</button></div></div></section>${revAuto() ? (setTimeout(LP_revInit, 40), '') : ''}` : '',
     faq: () => (H.faq.items || []).length ? `<section class="lp-sec lp-alt" id="lp-faq"><div class="lp-in lp-narrow">${secHead(H.faq)}${H.faq.items.map((f, i) => `<details class="lp-faq" ${i === 0 ? 'open' : ''}><summary>${esc(tx(f.q))}</summary><p>${esc(tx(f.a))}</p></details>`).join('')}</div></section>` : '',
     cta: () => `<section class="lp-cta"><div class="lp-in"><h2>${rich(tx(H.cta.title))}</h2><p>${esc(tx(H.cta.text))}</p><button class="btn gold lp-big" onclick="LP_auth('register')">${esc(tx(H.cta.btn))}</button></div></section>`,
   };
@@ -141,11 +141,10 @@ function LP_slide(i) { const imgs = document.querySelectorAll('.lp-frame img'), 
 // stats count up from 1 to the final number when the strip scrolls into view (text like "+1000", "98%", "1,200" keeps its prefix/suffix)
 function LP_countInit() {
   const els = [...document.querySelectorAll('.lp-count')]; if (!els.length) return;
-  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const parse = v => { const m = /^(\D*?)(\d[\d,]*)(\.\d+)?(.*)$/.exec(v || ''); if (!m || m[3] || /^[\/:\d]/.test(m[4])) return null; const n = +m[2].replace(/,/g, ''); return n > 1 ? { pre: m[1], n, post: m[4], comma: m[2].includes(',') } : null; };
   const fmt = (p, k) => p.pre + (p.comma ? k.toLocaleString('en-US') : k) + p.post;
-  const run = el => { const p = parse(el.dataset.v); if (!p || el.dataset.done) return; el.dataset.done = 1; const dur = 1800, t0 = performance.now();
-    const step = t => { if (!el.isConnected) return; const x = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(p, Math.max(1, Math.round(1 + (p.n - 1) * e))); if (x < 1) requestAnimationFrame(step); };
+  const run = el => { const p = parse(el.dataset.v); if (!p || el.dataset.done) return; el.dataset.done = 1; const dur = 2200; let t0 = null;
+    const step = t => { if (!el.isConnected) return; if (t0 === null) t0 = t + 250; const x = Math.max(0,  Math.min(1, (t - t0) / dur)), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(p, Math.max(1, Math.round(1 + (p.n - 1) * e))); if (x < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step); };
   els.forEach(el => { const p = parse(el.dataset.v); if (p) el.textContent = fmt(p, 1); });
   if (!('IntersectionObserver' in window)) return els.forEach(run);
@@ -153,7 +152,36 @@ function LP_countInit() {
   els.forEach(el => io.observe(el));
 }
 function LP_heroInit() { clearInterval(window.__heroT); LP.slide = 0; if (document.querySelectorAll('.lp-frame img').length > 1) window.__heroT = setInterval(() => { if (!document.querySelector('.lp-frame')) return clearInterval(window.__heroT); LP_slide(LP.slide + 1); }, 5000); }
-function LP_scroll(d) { const el = document.getElementById('lp-revs'); if (el) el.scrollBy({ left: d * (LANG === 'ar' ? -1 : 1) * el.clientWidth * 0.8, behavior: 'smooth' }); }
+function LP_scroll(d) { const el = document.getElementById('lp-revs'); if (!el) return; const R = window.__rev; if (R && R.el === el) R.hold(900);
+  el.scrollBy({ left: d * (LANG === 'ar' ? -1 : 1) * el.clientWidth * 0.8, behavior: 'smooth' }); }
+// reviews auto-scroll: moves toward the reading direction (Arabic → slides right, English → slides left), loops seamlessly, pauses on hover/touch/focus
+const REV_SPEEDS = { slow: 0.022, normal: 0.04, fast: 0.07 }; // px per ms
+const revAuto = () => { const sp = HOME().reviews.speed || 'normal'; return sp !== 'off' && !!REV_SPEEDS[sp]; };
+function LP_revInit() {
+  const el = document.getElementById('lp-revs'); if (!el || (window.__rev && window.__rev.el === el)) return;
+  const first = el.querySelector('.lp-rev:not(.clone)'), clone = el.querySelector('.lp-rev.clone'); if (!first || !clone) return;
+  const dir = getComputedStyle(el).direction === 'rtl' ? -1 : 1, v = REV_SPEEDS[HOME().reviews.speed || 'normal'] || REV_SPEEDS.normal;
+  el.classList.add('auto'); let pos = el.scrollLeft, last = null, pauseUntil = 0, hover = false, mine = false;
+  const R = window.__rev = { el, hold(ms) { pauseUntil = performance.now() + ms; } };
+  const loopW = () => Math.abs(clone.offsetLeft - first.offsetLeft);
+  el.addEventListener('mouseenter', () => hover = true); el.addEventListener('mouseleave', () => hover = false);
+  el.addEventListener('focusin', () => hover = true); el.addEventListener('focusout', () => hover = false);
+  el.addEventListener('touchstart', () => R.hold(1e9), { passive: true }); el.addEventListener('touchend', () => R.hold(2500), { passive: true });
+  el.addEventListener('wheel', () => R.hold(1500), { passive: true });
+  el.addEventListener('scroll', () => { if (!mine) { pos = el.scrollLeft; } mine = false; }, { passive: true });
+  const tick = t => {
+    if (!el.isConnected || window.__rev !== R) return;
+    const dt = last === null ? 0 : Math.min(64, t - last); last = t;
+    const W = loopW();
+    if (!hover && t > pauseUntil && !document.hidden && W > 0 && el.scrollWidth > el.clientWidth + 2) {
+      pos += dir * v * dt;
+      if (Math.abs(pos) >= W) pos -= dir * W; else if (pos * dir < 0) pos += dir * W;
+      mine = true; el.scrollLeft = pos;
+    } else if (W > 0) { if (Math.abs(pos) >= W) { pos -= dir * W; mine = true; el.scrollLeft = pos; } else if (pos * dir < 0) { pos += dir * W; mine = true; el.scrollLeft = pos; } }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
 /* ---------- رفع الصور (الواجهة / المواد / المدرسين) ---------- */
 function pickImage(onDone, { folder = 'home', maxW = 1600, square = false } = {}) {
@@ -239,6 +267,7 @@ function HE_body(id) {
     case 'teachers': return `${heTxt('teachers.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('teachers.sub', L('العنوان الفرعي', 'Subtitle'))}${heRaw('teachers.max', L('أقصى عدد مدرسين يظهر', 'Max teachers shown'), { type: 'number', w: 200 })}<div class="notice info">${icon('cap')} ${L('بيظهر المدرسين المفعّلين بس، مترتبين حسب التقييم. صورة المدرس والتقييم المبدئي من صفحة "المدرسين".', 'Only active teachers appear, sorted by rating. Photos and initial ratings are set on the Teachers page.')}</div>`;
     case 'join': return `<div class="he-split"><div>${imgField(H.join.img, `HE_img('join.img',{folder:'home',maxW:900})`, `HE_set('join.img','',true)`)}</div><div>${heTxt('join.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('join.text', L('النص', 'Text'), { area: true })}${heTxt('join.btn', L('الزرار', 'Button'))}<div class="tiny muted">${L('الزرار بيفتح صفحة "انضم كمدرس" لو منشورة، وإلا بيفتح الواتساب.', 'The button opens the “Teach with us” page if published, otherwise WhatsApp.')}</div></div></div>`;
     case 'reviews': return `${heTxt('reviews.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('reviews.sub', L('العنوان الفرعي', 'Subtitle'))}
+      <div class="field" style="max-width:260px"><label>${L('حركة الآراء التلقائية', 'Auto-scroll')}</label><select class="input" onchange="HE_set('reviews.speed',this.value)">${[['off', L('متوقفة', 'Off')], ['slow', L('بطيئة', 'Slow')], ['normal', L('عادية', 'Normal')], ['fast', L('سريعة', 'Fast')]].map(([k, t]) => `<option value="${k}" ${(HE_get('reviews.speed') || 'normal') === k ? 'selected' : ''}>${t}</option>`).join('')}</select><div class="tiny muted">${L('بالعربي بتتحرك يمين وبالإنجليزي شمال، وبتقف لما الزائر يقف عليها.', 'Moves right in Arabic and left in English; pauses when a visitor hovers.')}</div></div>
       ${items('reviews.items', (x, i, p) => `<div class="he-split"><div>${imgField(x.img, `HE_img('${p}.img',{folder:'home',maxW:300,square:true})`, `HE_set('${p}.img','',true)`, { round: true })}</div><div><div class="form-grid">${heRaw(p + '.name', L('الاسم', 'Name'))}${heRaw(p + '.stars', L('النجوم (1-5)', 'Stars (1-5)'), { type: 'number' })}</div>${heTxt(p + '.role', L('الصفة', 'Role'))}${heTxt(p + '.text', L('الرأي', 'Review'), { area: true })}</div></div>`)}${heAdd('reviews.items', add)}`;
     case 'faq': return `${heTxt('faq.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${items('faq.items', (x, i, p) => `${heTxt(p + '.q', L('السؤال', 'Question'))}${heTxt(p + '.a', L('الإجابة', 'Answer'), { area: true })}`)}${heAdd('faq.items', add)}`;
     case 'cta': return `${heTxt('cta.title', L('العنوان', 'Title'), { hint: RICH_HINT() })}${heTxt('cta.text', L('النص', 'Text'))}${heTxt('cta.btn', L('الزرار', 'Button'))}`;
