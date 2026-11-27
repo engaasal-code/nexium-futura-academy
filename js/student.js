@@ -9,24 +9,28 @@ function studentShell(u) {
   const myS = D.sessions.filter(s => s.studentId === u.id);
   const up = myS.filter(s => s.status === 'booked').length;
   const unreadMsg = D.messages.filter(m => m.thread.startsWith(u.id + '|') && m.from !== u.id && !m.blocked && !m.readS).length;
+  const kids = myKids(u); const alerts = kids.reduce((n, k) => n + kidAlerts(k).filter(a => a.k !== 'info').length, 0);
+  const recN = D.sessions.filter(s => s.studentId === u.id && safeUrl(s.recording)).length;
   const items = [
-    { grp: L('الطالب', 'Student') },
+    { grp: L('ولي الأمر', 'Parent') },
+    { v: 'family', i: 'users', t: L('أولادي', 'My children'), b: alerts || '' },
+    { grp: esc(u.name) },
     { v: 'home', i: 'home', t: L('الرئيسية', 'Home') },
     { v: 'book', i: 'calPlus', t: L('احجز حصة', 'Book a session') },
     { v: 'schedule', i: 'cal', t: L('جدولي', 'My schedule'), b: up || '' },
     { v: 'courses', i: 'book', t: L('حصصي وموادي', 'My courses & history') },
     { v: 'prices', i: 'layers', t: L('المواد والأسعار', 'Subjects & prices') },
-    { grp: L('ولي الأمر', 'Parent') },
+    { v: 'recordings', i: 'video', t: L('تسجيلات حصصي', 'My recordings'), b: recN || '' },
     { v: 'report', i: 'chart', t: L('تقرير الأداء والشهادات', 'Performance & certificates') },
     { v: 'chat', i: 'chat', t: L('الرسائل مع المدرسين', 'Messages with teachers'), b: unreadMsg || '' },
     { v: 'payments', i: 'wallet', t: L('مدفوعاتي', 'My transactions') },
     { v: 'settings', i: 'gear', t: L('الإعدادات', 'Settings') },
   ];
-  const views = { home: S_home, book: S_book, schedule: S_schedule, courses: S_courses, prices: S_prices, report: S_report, chat: S_chat, payments: S_payments, settings: S_settings, session: S_session };
+  const views = { home: S_home, book: S_book, schedule: S_schedule, courses: S_courses, prices: S_prices, report: S_report, chat: S_chat, payments: S_payments, settings: S_settings, session: S_session, family: S_family, recordings: S_recordings };
   const body = (views[APP.view] || S_home)(u);
   const band = !u.confirmed ? `<div class="band">${icon('mail')} ${L('أكّد بريدك الإلكتروني', 'Confirm your email')} <b class="num">${esc(u.email)}</b> ${L('عشان توصلك لينكات الحصص', 'to receive session links')} <button class="btn sm" onclick="S_resendConfirm()">${L('إعادة الإرسال', 'Resend')}</button> <button class="btn sm ghost" style="background:#fff" onclick="S_confirmEmail()">${L('محاكاة: فتح رسالة التأكيد', 'Demo: open confirmation email')}</button></div>` : '';
   return `${band}${headerHTML(u)}<div class="cta-band" onclick="go('book')">${icon('calPlus')} ${L('احجز حصتك الجاية', 'Book your next session')} <b>←</b></div>
-    <div class="shell">${sideHTML(items, `<b>${esc(u.name)}</b>${stageName(u.stage)} · ${gradeName(u.grade)}`)}<main class="main">${body}</main></div>${footerHTML()}${waBtn()}`;
+    <div class="shell">${sideHTML(items, `<b>${esc(u.name)}</b>${stageName(u.stage)} · ${gradeName(u.grade)}${kids.length > 1 ? `<div class="kid-switch">${kids.map(k => `<button class="${k.id === u.id ? 'on' : ''}" onclick="S_switchKid('${k.id}')">${esc(String(k.name).split(' ')[0])}</button>`).join('')}</div>` : ''}`)}<main class="main">${kids.length > 1 && APP.view !== 'family' ? `<div class="kid-bar">${icon('users')} ${L('بتتابع دلوقتي:', 'Now viewing:')} <b>${esc(u.name)}</b><span class="sp" style="flex:1"></span>${kids.filter(k => k.id !== u.id).map(k => `<button class="btn sm ghost" onclick="S_switchKid('${k.id}')">${L('انتقل لـ', 'Switch to')} ${esc(k.name)}</button>`).join('')}</div>` : ''}${body}</main></div>${footerHTML()}${waBtn()}`;
 }
 function S_resendConfirm() { const u = currentUser(); D.emails.push({ id: uid('em'), to: u.email, type: 'confirm', subject: 'أكّد بريدك الإلكتروني – NEXIUM FUTURA ACADEMY', body: 'اضغط على الرابط لتأكيد حسابك.', at: new Date().toISOString(), status: 'sent' }); save(); toast(L('تم إرسال رسالة التأكيد مرة أخرى', 'Confirmation email resent'), 'ok'); }
 function S_confirmEmail() { const u = currentUser(); u.confirmed = true; save(); render(); toast(L('تم تأكيد البريد الإلكتروني ✓', 'Email confirmed ✓'), 'ok'); }
@@ -39,7 +43,7 @@ function sessCard(s, who = 'student') {
       <div class="meta"><span>${icon('clock')} ${fmtTime(s.start)} – ${fmtTime(new Date(sEnd(s)).toISOString())}</span>
       ${who === 'student' ? `<span>${icon('user')} ${esc(tName(t))}</span>` : `<span>${icon('user')} ${esc(st ? st.name : '—')}</span>`}
       ${s.status === 'booked' ? `<span class="countdown">${relTime(s.start)}</span>` : ''}</div></div>
-    ${s.status === 'booked' ? `<a class="btn ${soon ? 'gold' : 'ghost'} sm" href="${esc(s.zoom)}" target="_blank" rel="noopener">${icon('video')} ${L('دخول الحصة', 'Join')}</a>` : ''}
+    ${s.status === 'booked' ? `<a class="btn ${soon ? 'gold' : 'ghost'} sm" href="${esc(safeUrl(s.zoom) || '#')}" target="_blank" rel="noopener noreferrer">${icon('video')} ${L('دخول الحصة', 'Join')}</a>` : ''}
     ${who === 'student' && s.status !== 'open' ? `<button class="btn ghost sm" onclick="go('session',{id:'${s.id}'})">${L('التفاصيل', 'Details')}</button>` : ''}</div>`;
 }
 
@@ -63,7 +67,7 @@ function S_home(u) {
       ${upcoming.length ? `<div class="notice gold" style="margin-top:12px">${icon('mail')} ${L('هيوصلك إيميل على', 'An email will be sent to')} <b class="num">${esc(u.email)}</b> ${L('فيه لينك الحصة قبل ميعادها بـ 10 دقايق.', 'with the session link 10 minutes before it starts.')}</div>` : ''}
     </div>
     <div class="card"><div class="card-h"><h2>${L('موادي النشطة', 'Active subjects')}</h2><button class="btn sm ghost" onclick="go('prices')">${icon('plus')} ${L('مادة جديدة', 'Add subject')}</button></div>
-      ${enr.length ? enr.map(e => { const us = enrollUsage(e); const sub = subjById(e.subjectId); return `<div class="metric"><div class="row"><b>${sub.icon} ${esc(subjName(sub))}</b><span class="small muted"><span class="num">${us.remaining}</span> ${L('حصة متبقية من', 'left of')} <span class="num">${e.sessions}</span> ${e.status === 'pending' ? statusPill('pending') : ''}</span></div><div class="bar gold"><i style="width:${(us.used / e.sessions) * 100}%"></i></div></div>`; }).join('') : emptyBox(L('لسه مفيش مواد', 'No subjects yet'), 'book')}
+      ${enr.length ? enr.map(e => { const us = enrollUsage(e); const sub = subjById(e.subjectId); return `<div class="metric"><div class="row"><b>${esc(sub.icon)} ${esc(subjName(sub))}</b><span class="small muted"><span class="num">${us.remaining}</span> ${L('حصة متبقية من', 'left of')} <span class="num">${e.sessions}</span> ${e.status === 'pending' ? statusPill('pending') : ''}</span></div><div class="bar gold"><i style="width:${(us.used / e.sessions) * 100}%"></i></div></div>`; }).join('') : emptyBox(L('لسه مفيش مواد', 'No subjects yet'), 'book')}
     </div>
   </div>`;
 }
@@ -80,7 +84,7 @@ function S_book(u) {
   <div class="stages">${STAGES.map(s => `<div class="stage ${SB.stage === s.id ? 'on' : ''}" onclick="SB.stage='${s.id}';SB.grade='${s.grades[0] || ''}';SB.subject=null;render()"><span class="e">${s.e}</span>${L(s.ar, s.en)}<small>${s.grades.length ? s.grades[0] + ' – ' + s.grades[s.grades.length - 1] : L('كل الأعمار', 'All ages')}</small></div>`).join('')}</div>
   ${st.grades.length ? `<div class="row" style="margin-bottom:14px"><span class="small muted">${L('الصف:', 'Grade:')}</span>${st.grades.map(g => `<button class="btn sm ${SB.grade === g ? '' : 'ghost'}" onclick="SB.grade='${g}';render()">${gradeName(g)}</button>`).join('')}</div>` : ''}
   <h3 style="margin-bottom:10px">${L('المواد', 'Subjects')}</h3>
-  <div class="subj-grid">${subs.map((s, i) => `<div class="subj ${SB.subject === s.id ? 'on' : ''}" style="background:${['#0B2463', '#122F7A', '#1F3F8F', '#A67812', '#C99A26', '#06173F'][i % 6]}" onclick="SB.subject='${s.id}';SB.filterDate='';render();setTimeout(()=>document.getElementById('tlist')?.scrollIntoView({behavior:'smooth'}),50)"><span class="si">${s.icon}</span><div><b>${esc(subjName(s))}</b><small>${D.teachers.filter(t => t.active && t.subjects.some(x => x.id === s.id)).length} ${L('مدرس', 'teachers')}</small></div></div>`).join('')}</div>
+  <div class="subj-grid">${subs.map((s, i) => `<div class="subj ${SB.subject === s.id ? 'on' : ''} ${safeImg(s.image) ? 'has-img' : ''}" style="${subjBg(s, i, ['#0B2463', '#122F7A', '#1F3F8F', '#A67812', '#C99A26', '#06173F'])}" onclick="SB.subject='${s.id}';SB.filterDate='';render();setTimeout(()=>document.getElementById('tlist')?.scrollIntoView({behavior:'smooth'}),50)"><span class="si">${esc(s.icon)}</span><div><b>${esc(subjName(s))}</b><small>${D.teachers.filter(t => t.active && t.subjects.some(x => x.id === s.id)).length} ${L('مدرس', 'teachers')}</small></div></div>`).join('')}</div>
   <div id="tlist" class="sec">${sub ? `
     <div class="grid" style="grid-template-columns:260px 1fr;align-items:start" id="bookgrid">
       <div class="card" style="position:sticky;top:84px"><h3 style="margin-bottom:10px">${L('بحث بالتاريخ', 'Search by date')}</h3>
@@ -92,14 +96,14 @@ function S_book(u) {
     </div><style>@media(max-width:860px){#bookgrid{grid-template-columns:1fr!important}#bookgrid>.card{position:static!important}}</style>` : `<div class="card">${emptyBox(L('اختار مادة عشان تشوف المدرسين', 'Pick a subject to see teachers'), 'book')}</div>`}</div>`;
 }
 function teacherCard(t, sub, u) {
-  const rating = avgRating(t.id), nR = D.ratings.filter(r => r.teacherId === t.id).length;
+  const R = ratingOf(t.id), rating = R.v, nR = R.n;
   const studentsN = new Set(D.sessions.filter(s => s.teacherId === t.id && s.studentId).map(s => s.studentId)).size;
   const doneN = D.sessions.filter(s => s.teacherId === t.id && s.status === 'done').length;
   const free = freeSlots(t.id, u.id);
-  return `<div class="tcard"><span class="av xl" style="background:${t.color}">${esc(initials(t.name))}</span>
+  return `<div class="tcard">${avatarHTML(t, 'xl')}
     <div class="body"><div class="row between"><div><h3>${esc(tName(t))} ${t.badge === 'top' ? `<span class="pill gold">${L('الأعلى تقييماً', 'Top rated')}</span>` : t.badge === 'rising' ? `<span class="pill info">${L('موهبة صاعدة', 'Rising talent')}</span>` : ''}</h3>
       <div class="row small" style="gap:14px;margin-top:3px">${stars(rating)} <span class="num">${rating ? rating.toFixed(1) : '—'}</span> <span class="muted">(${nR} ${L('تقييم', 'reviews')})</span><span><b class="num">${studentsN}</b> ${L('طالب', 'students')}</span><span><b class="num">${doneN}</b> ${L('حصة', 'sessions')}</span></div></div>
-      <a class="yt" href="${esc(t.youtube)}" target="_blank" rel="noopener">${bicon('youtube', 18)} ${L('فيديو تعريفي', 'Intro video')}</a></div>
+      ${safeUrl(t.youtube) ? `<a class="yt" href="${esc(safeUrl(t.youtube))}" target="_blank" rel="noopener noreferrer">${bicon('youtube', 18)} ${L('فيديو تعريفي', 'Intro video')}</a>` : ''}</div>
       <p style="margin:8px 0" class="muted">${esc(LANG === 'ar' ? t.bio : t.bioEn)}</p>
       <div class="small" style="margin-bottom:6px"><b>${L('بيدرّس:', 'Teaches:')}</b></div>
       <div class="chips">${t.subjects.slice(0, 6).map(x => { const s = subjById(x.id); return s ? `<span class="pill ${x.id === sub.id ? 'gold' : 'navy'}">${esc(subjName(s))} · ${stageName(s.stage)}</span>` : ''; }).join('')}</div>
@@ -108,10 +112,10 @@ function teacherCard(t, sub, u) {
     </div></div>`;
 }
 function S_teacherProfile(tid) {
-  const t = tchById(tid); const rs = D.ratings.filter(r => r.teacherId === tid);
-  modal(tName(t), `<div class="row" style="gap:16px;align-items:flex-start"><span class="av xl" style="background:${t.color}">${esc(initials(t.name))}</span><div style="flex:1"><p style="margin-top:0">${esc(LANG === 'ar' ? t.bio : t.bioEn)}</p>
-    <a class="btn ghost sm" href="${esc(t.youtube)}" target="_blank" rel="noopener">${bicon('youtube', 16)} ${L('شاهد الفيديو التعريفي على يوتيوب', 'Watch intro video on YouTube')}</a></div></div>
-    <hr class="sep"><h4 style="margin-bottom:8px">${L('آراء أولياء الأمور', 'Parent reviews')} ${stars(avgRating(tid))}</h4>
+  const t = tchById(tid); const rs = D.ratings.filter(r => r.teacherId === tid); const R = ratingOf(tid);
+  modal(esc(tName(t)), `<div class="row" style="gap:16px;align-items:flex-start">${avatarHTML(t, 'xl')}<div style="flex:1"><p style="margin-top:0">${esc(LANG === 'ar' ? t.bio : (t.bioEn || t.bio))}</p>
+    ${safeUrl(t.youtube) ? `<a class="btn ghost sm" href="${esc(safeUrl(t.youtube))}" target="_blank" rel="noopener noreferrer">${bicon('youtube', 16)} ${L('شاهد الفيديو التعريفي على يوتيوب', 'Watch intro video on YouTube')}</a>` : ''}</div></div>
+    <hr class="sep"><h4 style="margin-bottom:8px">${L('آراء أولياء الأمور', 'Parent reviews')} ${stars(R.v)} <span class="small num">${R.v ? R.v.toFixed(1) : '—'}</span> <span class="small muted">(${R.n})</span></h4>
     ${rs.length ? rs.map(r => `<div style="padding:8px 0;border-bottom:1px solid var(--line)">${stars(r.stars)} <span class="small muted">${esc(stuById(r.studentId)?.parent || '')}</span>${r.comment ? `<div class="small">${esc(r.comment)}</div>` : ''}</div>`).join('') : `<div class="muted small">${L('لا توجد تقييمات بعد', 'No reviews yet')}</div>`}`);
 }
 function S_openBooking(tid, sid) {
@@ -120,6 +124,8 @@ function S_openBooking(tid, sid) {
   const enr = activeEnrollment(u.id, sid);
   if (!enr) {
     const pend = D.enrollments.find(e => e.studentId === u.id && e.subjectId === sid && e.status === 'pending');
+    const exp = D.enrollments.find(e => e.studentId === u.id && e.subjectId === sid && ['paid', 'partial'].includes(e.status) && pkgState(e).st === 'expired');
+    if (exp && !pend) return modal(L('صلاحية الباقة انتهت', 'Package expired'), `<p>${L('باقة المادة دي انتهت صلاحيتها يوم', 'This subject’s package expired on')} <b class="num">${exp.to}</b> ${L('وكان باقي فيها', 'with')} <b class="num">${pkgState(exp).remaining}</b> ${L('حصة. جدّد الباقة أو كلّم الإدارة.', 'sessions left. Renew or contact the admin.')}</p>`, `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="closeModal();S_renew('${exp.id}')">${L('جدّد الباقة', 'Renew')}</button>`);
     return modal(L('محتاج باقة للمادة دي', 'You need a package'), pend ? `<div class="notice info">${L('عندك باقة بانتظار تأكيد الدفع من الإدارة. أول ما تتأكد تقدر تحجز.', 'You have a package waiting for payment approval. You can book once it’s approved.')}</div>` : `<p>${L('مفيش رصيد حصص في المادة دي. اختار باقة أو احجز حصة تجريبية.', 'No session balance for this subject. Choose a package or a trial session.')}</p>`,
       pend ? '' : `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="closeModal();SP.stage='${subjById(sid).stage}';SP.subject='${sid}';go('prices')">${L('اختار باقة', 'Choose a package')}</button>`);
   }
@@ -138,7 +144,7 @@ function S_renderBooking() {
   for (let d = 1; d <= days; d++) { const k = ymd(new Date(y, m, d)); const av = byDay[k]; g += `<div class="d ${av ? 'av' : ''} ${SB.date === k ? 'sel' : ''} ${k === ymd(new Date()) ? 'today' : ''}" ${av ? `onclick="SB.date='${k}';SB.slot=null;S_renderBooking()"` : ''}><span class="num">${d}</span>${av ? `<i class="num">${av.length}</i>` : ''}</div>`; }
   const slots = (byDay[SB.date] || []);
   const enr = activeEnrollment(u.id, SB.subject); const us = enr ? enrollUsage(enr) : null;
-  modal(`${L('حجز حصة', 'Book')} · ${esc(subjName(sub))}`, `<div class="row" style="margin-bottom:14px"><span class="av" style="background:${t.color}">${esc(initials(t.name))}</span><div><b>${esc(tName(t))}</b><div class="small muted">${L('رصيدك:', 'Balance:')} <span class="num">${us ? us.remaining : 0}</span> ${L('حصة', 'sessions')}</div></div></div>
+  modal(`${L('حجز حصة', 'Book')} · ${esc(subjName(sub))}`, `<div class="row" style="margin-bottom:14px">${avatarHTML(t)}<div><b>${esc(tName(t))}</b><div class="small muted">${L('رصيدك:', 'Balance:')} <span class="num">${us ? us.remaining : 0}</span> ${L('حصة', 'sessions')}</div></div></div>
     <div class="grid g2" style="gap:20px"><div class="cal"><div class="cal-h"><button class="btn sm ghost" onclick="SB.calM--;if(SB.calM<0){SB.calM=11;SB.calY--};S_renderBooking()">‹</button><b>${first.toLocaleDateString(LANG === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}</b><button class="btn sm ghost" onclick="SB.calM++;if(SB.calM>11){SB.calM=0;SB.calY++};S_renderBooking()">›</button></div><div class="cal-g">${g}</div>
       <div class="tiny muted" style="margin-top:8px">${L('الأيام الرمادي يا إما المدرس مشغول فيها أو مفيهاش مواعيد. الرقم الذهبي = عدد المواعيد الفاضية.', 'Grey days are busy or have no free times. Gold number = free times.')}</div></div>
     <div><h4 style="margin-bottom:10px">${SB.date ? fmtDate(SB.date + 'T12:00:00') : L('اختار يوم', 'Pick a day')}</h4>
@@ -165,13 +171,13 @@ function S_prices(u) {
   const subs = D.subjects.filter(s => s.stage === SP.stage && s.visible);
   const sub = subjById(SP.subject && subjById(SP.subject)?.stage === SP.stage ? SP.subject : null);
   return `<div class="page-h"><div><div class="crumbs">${L('الرئيسية › المواد والأسعار', 'Home › Subjects & prices')}</div><h1>${L('المواد والأسعار', 'Subjects & prices')}</h1><p>${L('المواد حسب المرحلة الدراسية، بالإضافة لكورسات الصيف', 'Subjects by school stage, plus summer courses')}</p></div>
-    <span class="pill navy">${icon('globe')} ${L('الأسعار معروضة بـ', 'Prices in')} ${C.flag} ${C.cur}</span></div>
+    ${pricesOn('students') ? `<span class="pill navy">${icon('globe')} ${L('الأسعار معروضة بـ', 'Prices in')} ${C.flag} ${C.cur}</span>` : ''}</div>
   <div class="stages">${STAGES.map(s => `<div class="stage ${SP.stage === s.id ? 'on' : ''}" onclick="SP.stage='${s.id}';SP.subject=null;render()"><span class="e">${s.e}</span>${L(s.ar, s.en)}<small>${D.subjects.filter(x => x.stage === s.id && x.visible).length} ${L('مادة', 'subjects')}</small></div>`).join('')}</div>
   ${SP.stage === 'summer' ? `<div class="notice gold" style="margin-bottom:14px">${icon('sun')} ${L('كورسات الصيف متاحة لكل الأعمار – استغل الإجازة في مهارة جديدة أو تقوية مادة.', 'Summer courses are open to all ages – learn a new skill or strengthen a subject.')}</div>` : ''}
-  <div class="subj-grid">${subs.map((s, i) => { const p = pkgPrice(s, PACKAGES[1], C); return `<div class="subj ${sub && sub.id === s.id ? 'on' : ''}" style="background:${['#0B2463', '#A67812', '#122F7A', '#1F9D6B', '#06173F', '#C2410C'][i % 6]}" onclick="SP.subject='${s.id}';render();setTimeout(()=>document.getElementById('pk')?.scrollIntoView({behavior:'smooth'}),50)"><span class="si">${s.icon}</span><div><b>${esc(subjName(s))}</b><small>${L('من', 'from')} ${money(p.per, C)} / ${L('حصة', 'session')}</small></div></div>`; }).join('')}</div>
-  <div id="pk" class="sec">${sub ? `<div class="card"><div class="card-h"><div><h2>${sub.icon} ${esc(subjName(sub))} — ${stageName(sub.stage)}</h2><div class="small muted">${L('مدة الحصة', 'Session length')} <span class="num">${D.settings.sessionMin}</span> ${L('دقيقة · صلاحية الباقة 60 يوم', 'min · package valid 60 days')}</div></div></div>
-    <div class="pkgs">${PACKAGES.map(pk => { const p = pkgPrice(sub, pk, C); return `<div class="pkg ${pk.best ? 'best' : ''}">${pk.best ? `<span class="tag">${L('الأكثر طلباً', 'Most popular')}</span>` : ''}<b>${L(pk.ar, pk.en)}</b><div class="pr">${money(p.total, C)}</div><div class="per">${money(p.per, C)} / ${L('حصة', 'session')}</div>
-      <button class="btn ${pk.best ? 'gold' : ''} block sm" style="margin-top:12px" onclick="S_checkout('${sub.id}',${pk.n})">${pk.n === 1 ? L('ابدأ تجربة', 'Start trial') : L('اشترك', 'Subscribe')}</button></div>`; }).join('')}</div>
+  <div class="subj-grid">${subs.map((s, i) => { const p = pkgPrice(s, PACKAGES[1], C); return `<div class="subj ${sub && sub.id === s.id ? 'on' : ''} ${safeImg(s.image) ? 'has-img' : ''}" style="${subjBg(s, i, ['#0B2463', '#A67812', '#122F7A', '#1F9D6B', '#06173F', '#C2410C'])}" onclick="SP.subject='${s.id}';render();setTimeout(()=>document.getElementById('pk')?.scrollIntoView({behavior:'smooth'}),50)"><span class="si">${esc(s.icon)}</span><div><b>${esc(subjName(s))}</b><small>${pricesOn('students') ? `${L('من', 'from')} ${money(p.per, C)} / ${L('حصة', 'session')}` : stageName(s.stage)}</small></div></div>`; }).join('')}</div>
+  <div id="pk" class="sec">${sub ? `<div class="card"><div class="card-h"><div><h2>${esc(sub.icon)} ${esc(subjName(sub))} — ${stageName(sub.stage)}</h2><div class="small muted">${L('مدة الحصة', 'Session length')} <span class="num">${D.settings.sessionMin}</span> ${L('دقيقة · صلاحية الباقة', 'min · package valid')} <span class="num">${PKG_DAYS()}</span> ${L('يوم من تأكيد الدفع', 'days from payment approval')}</div></div></div>
+    <div class="pkgs">${PACKAGES.map(pk => { const p = pkgPrice(sub, pk, C); const show = pricesOn('students'); return `<div class="pkg ${pk.best ? 'best' : ''}">${pk.best ? `<span class="tag">${L('الأكثر طلباً', 'Most popular')}</span>` : ''}<b>${L(pk.ar, pk.en)}</b>${show ? `<div class="pr">${money(p.total, C)}</div><div class="per">${money(p.per, C)} / ${L('حصة', 'session')}</div>` : `<div class="per" style="margin:10px 0 4px"><span class="num">${pk.n}</span> ${L('حصة', 'sessions')} · ${L('السعر عند التواصل', 'Price on request')}</div>`}
+      ${show ? `<button class="btn ${pk.best ? 'gold' : ''} block sm" style="margin-top:12px" onclick="S_checkout('${sub.id}',${pk.n})">${pk.n === 1 ? L('ابدأ تجربة', 'Start trial') : L('اشترك', 'Subscribe')}</button>` : `<a class="btn ${pk.best ? 'gold' : ''} block sm" style="margin-top:12px" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent(L('عايز أعرف سعر ', 'Price please: ') + L(pk.ar, pk.en) + ' – ' + subjName(sub) + ' (' + stageName(sub.stage) + ')')}">${bicon('whatsapp', 15)} ${L('اسأل عن السعر', 'Ask for the price')}</a>`}</div>`; }).join('')}</div>
     <ul class="small muted" style="margin:16px 0 0;padding-inline-start:18px"><li>${L('حصص مباشرة أونلاين على زووم مع المدرس', 'Live online Zoom sessions with the teacher')}</li><li>${L('واجبات وتصحيح على المنصة', 'Homework with grading on the platform')}</li><li>${L('تقرير أداء لولي الأمر وشهادة في آخر المستوى', 'Parent report and a level certificate')}</li></ul></div>` : `<div class="card">${emptyBox(L('اختار مادة عشان تشوف الباقات والأسعار', 'Pick a subject to see packages and prices'), 'layers')}</div>`}</div>`;
 }
 function S_checkout(sid, n) {
@@ -189,7 +195,7 @@ function S_pay() {
   const u = currentUser(); const c = window.__ck;
   if (!c.file) return toast(L('ارفع صورة الإيصال الأول', 'Please upload the receipt'), 'bad');
   const today = new Date();
-  D.enrollments.push({ id: uid('e'), studentId: u.id, subjectId: c.sid, sessions: c.n, amount: c.amount, currency: c.cur, method: c.method, paid: 0, status: 'pending', created: today.toISOString(), from: ymd(today), to: ymd(new Date(today.getTime() + 60 * DAY)), receipt: c.file });
+  D.enrollments.push({ id: uid('e'), studentId: u.id, subjectId: c.sid, sessions: c.n, amount: c.amount, currency: c.cur, method: c.method, paid: 0, status: 'pending', created: today.toISOString(), from: ymd(today), to: ymd(new Date(today.getTime() + PKG_DAYS() * DAY)), receipt: c.file });
   save(); closeModal(); toast(L('تم إرسال طلب الدفع – هنبلغك أول ما يتأكد', 'Payment submitted – we’ll notify you when approved'), 'ok'); go('payments');
 }
 
@@ -204,13 +210,14 @@ function S_schedule(u) {
 function S_courses(u) {
   const enr = D.enrollments.filter(e => e.studentId === u.id).sort((a, b) => b.created.localeCompare(a.created));
   return `<div class="page-h"><div><div class="crumbs">${L('الرئيسية › حصصي', 'Home › My courses')}</div><h1>${L('حصصي وموادي', 'My courses & history')}</h1><p>${L('المواد اللي أخدها الطالب، الحضور والغياب مع كل مدرس، وعدد الحصص المتبقية', 'Subjects taken, attendance with each teacher, and sessions remaining')}</p></div></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>${L('المادة', 'Subject')}</th><th>${L('المدرس', 'Teacher')}</th><th>${L('تمت', 'Done')}</th><th>${L('غياب', 'Absent')}</th><th>${L('متبقي', 'Left')}</th><th>${L('الحالة', 'Status')}</th><th></th></tr></thead><tbody>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>${L('المادة', 'Subject')}</th><th>${L('المدرس', 'Teacher')}</th><th>${L('تمت', 'Done')}</th><th>${L('غياب', 'Absent')}</th><th>${L('متبقي', 'Left')}</th><th>${L('تنتهي', 'Ends')}</th><th>${L('الحالة', 'Status')}</th><th></th></tr></thead><tbody>
   ${enr.map(e => { const us = enrollUsage(e); const sub = subjById(e.subjectId); const tids = [...new Set(D.sessions.filter(s => s.enrollmentId === e.id).map(s => s.teacherId))]; const open = SC.open === e.id;
-    return `<tr><td class="num">#${e.id.slice(1, 6).toUpperCase()}</td><td><b>${sub.icon} ${esc(subjName(sub))}</b><div class="tiny muted">${stageName(sub.stage)} · ${L('باقة', 'Pkg')} <span class="num">${e.sessions}</span></div></td><td>${tids.map(t => esc(tName(tchById(t)))).join('، ') || '—'}</td><td class="num">${us.done}</td><td class="num">${us.absent}</td><td><b class="num">${us.remaining}</b></td><td>${statusPill(e.status)}</td>
+    return `<tr><td class="num">#${e.id.slice(1, 6).toUpperCase()}</td><td><b>${esc(sub.icon)} ${esc(subjName(sub))}</b><div class="tiny muted">${stageName(sub.stage)} · ${L('باقة', 'Pkg')} <span class="num">${e.sessions}</span></div></td><td>${tids.map(t => esc(tName(tchById(t)))).join('، ') || '—'}</td><td class="num">${us.done}</td><td class="num">${us.absent}</td><td><b class="num">${us.remaining}</b></td><td>${pkgEnd(e)}</td><td>${statusPill(e.status)}</td>
       <td><button class="btn sm ghost" onclick="SC.open=SC.open==='${e.id}'?null:'${e.id}';render()">${open ? '▲' : '▼'}</button></td></tr>
-      ${open ? `<tr><td colspan="8" style="background:#FAFBFE">${S_enrollDetail(e, us, tids)}</td></tr>` : ''}`; }).join('') || `<tr><td colspan="8">${emptyBox(L('لا توجد مواد بعد', 'No courses yet'), 'book')}</td></tr>`}
+      ${open ? `<tr><td colspan="9" style="background:#FAFBFE">${S_enrollDetail(e, us, tids)}</td></tr>` : ''}`; }).join('') || `<tr><td colspan="8">${emptyBox(L('لا توجد مواد بعد', 'No courses yet'), 'book')}</td></tr>`}
   </tbody></table></div>`;
 }
+const pkgEnd = e => { if (!e.to || ['pending', 'withdrawn'].includes(e.status)) return '<span class="muted">—</span>'; const p = pkgState(e); return `<span class="num small">${e.to}</span><div class="tiny ${p.st === 'expired' ? 'neg' : p.days <= 7 ? '' : 'muted'}" ${p.st !== 'expired' && p.days <= 7 ? 'style="color:var(--warn)"' : ''}>${p.st === 'expired' ? L('انتهت', 'Expired') : p.st === 'finished' ? L('خلصت الحصص', 'Used up') : `${L('باقي', '')} <span class="num">${p.days}</span> ${L('يوم', 'days left')}`}</div>`; };
 function S_enrollDetail(e, us, tids) {
   const ss = D.sessions.filter(s => s.enrollmentId === e.id).sort((a, b) => b.start.localeCompare(a.start));
   const myR = D.ratings.filter(r => r.studentId === e.studentId);
@@ -223,7 +230,7 @@ function S_enrollDetail(e, us, tids) {
 function S_rate(tid) {
   const u = currentUser(); const ex = D.ratings.find(r => r.teacherId === tid && r.studentId === u.id); window.__rate = ex ? ex.stars : 0;
   const draw = () => `<div class="star-in">${[1, 2, 3, 4, 5].map(i => `<button class="${i <= window.__rate ? 'on' : ''}" onclick="window.__rate=${i};this.parentNode.outerHTML=window.__drawStars()">★</button>`).join('')}</div>`; window.__drawStars = draw;
-  modal(L('تقييم ', 'Rate ') + tName(tchById(tid)), `<p class="muted" style="margin-top:0">${L('تقييمك بيساعد الإدارة تحافظ على جودة التعليم', 'Your rating helps us keep quality high')}</p>${draw()}<div class="field" style="margin-top:14px"><label>${L('تعليق (اختياري)', 'Comment (optional)')}</label><textarea class="input" id="rt_c">${esc(ex?.comment || '')}</textarea></div>`,
+  modal(L('تقييم ', 'Rate ') + esc(tName(tchById(tid))), `<p class="muted" style="margin-top:0">${L('تقييمك بيساعد الإدارة تحافظ على جودة التعليم', 'Your rating helps us keep quality high')}</p>${draw()}<div class="field" style="margin-top:14px"><label>${L('تعليق (اختياري)', 'Comment (optional)')}</label><textarea class="input" id="rt_c">${esc(ex?.comment || '')}</textarea></div>`,
     `<button class="btn gold" onclick="S_saveRate('${tid}')">${L('حفظ التقييم', 'Save rating')}</button>`);
 }
 function S_saveRate(tid) {
@@ -243,9 +250,9 @@ function S_session(u) {
   let body = '';
   if (tab === 'obj') body = s.objectives ? `<p>${esc(s.objectives)}</p>` : `<div class="muted">${L('لم يضف المدرس أهدافاً بعد', 'No objectives yet')}</div>`;
   if (tab === 'mat') body = s.material ? `<div class="row">${icon('file')} <b>${esc(s.material)}</b></div>` : `<div class="muted">${L('لا توجد مادة مرفقة', 'No material attached')}</div>`;
-  if (tab === 'rec') body = s.recording ? `<a class="btn ghost" href="${esc(s.recording)}" target="_blank" rel="noopener">${icon('video')} ${L('مشاهدة التسجيل', 'Watch recording')}</a>` : `<div class="muted">${L('التسجيل غير متاح بعد', 'Recording not available yet')}</div>`;
+  if (tab === 'rec') body = safeUrl(s.recording) ? `<a class="btn ghost" href="${esc(safeUrl(s.recording))}" target="_blank" rel="noopener noreferrer">${icon('video')} ${L('مشاهدة التسجيل', 'Watch recording')}</a>` : `<div class="muted">${L('التسجيل غير متاح بعد', 'Recording not available yet')}</div>`;
   if (tab === 'hw') body = s.assignment ? `<div style="background:var(--bg);border-radius:10px;padding:12px"><b>${L('الواجب:', 'Assignment:')}</b> ${esc(s.assignment)}</div>
-    ${hw ? `<div class="notice ${hw.grade != null ? 'ok' : 'info'}" style="margin-top:12px">${icon('check')} <div>${L('تم رفع الحل:', 'Submitted:')} <b>${fileLabel(hw.file, 'homework')}</b> · <span class="num">${fmtDT(hw.at)}</span>${hw.grade != null ? `<div><b>${L('الدرجة:', 'Grade:')} <span class="num">${hw.grade}/${hw.max}</span></b> — ${esc(hw.feedback)}</div>` : `<div>${L('بانتظار التصحيح من المدرس', 'Waiting for teacher to grade')}</div>`}</div></div>` : `
+    ${hw ? `<div class="notice ${hw.grade != null ? 'ok' : 'info'}" style="margin-top:12px">${icon('check')} <div>${L('تم رفع الحل:', 'Submitted:')} <b>${fileLabel(hw.file, 'homework')}</b> · <span class="num">${fmtDT(hw.at)}</span>${hw.grade != null ? `<div><b>${L('الدرجة:', 'Grade:')} <span class="num">${hw.grade}/${hw.max}</span></b> — ${esc(hw.feedback)}</div>` : `<div>${L('بانتظار التصحيح من المدرس', 'Waiting for teacher to grade')}</div>`}${hwMarked(hw) ? `<button class="btn gold sm" style="margin-top:8px" onclick="S_viewMarked('${hw.id}')">📝 ${L('شوف ورقتك بعد التصحيح', 'See your corrected paper')}</button>` : ''}</div></div>` : `
     <label class="upload" style="margin-top:12px">${icon('upload')}<div id="hwf">${L('ارفع الحل (صورة / PDF / فيديو)', 'Upload answer (image / PDF / video)')}</div><input type="file" onchange="window.__hwfObj=this.files[0]||null;window.__hwf=this.files[0]?.name;document.getElementById('hwf').textContent=window.__hwf"></label>
     <div class="field" style="margin-top:10px"><label>${L('ملاحظة للمدرس', 'Note to teacher')}</label><input class="input" id="hw_note"></div><button class="btn gold" onclick="S_submitHW('${s.id}')">${icon('upload')} ${L('رفع الحل', 'Upload answer')}</button>`}` : `<div class="muted">${L('لا يوجد واجب لهذه الحصة', 'No assignment for this session')}</div>`;
   return `<div class="crumbs">${L('الرئيسية › تقرير الحصة', 'Home › Session report')}</div>
@@ -277,7 +284,7 @@ function S_report(u) {
   return `<div class="page-h"><div><div class="crumbs">${L('ولي الأمر › تقرير الأداء', 'Parent › Performance')}</div><h1>${L('تقرير أداء', 'Performance report:')} ${esc(u.name)}</h1><p>${L('نسبة الحضور، التفاعل، الواجب والالتزام في كل مادة – بيعبّيها المدرس وبتظهر هنا لولي الأمر', 'Attendance, engagement, homework and commitment per subject – filled in by teachers')}</p></div></div>
   ${subjects.map(sid => { const sub = subjById(sid); const r = studentEval(u.id, sid); const t = r.ev ? tchById(r.ev.teacherId) : null;
     const m = (l, v, cls = '') => `<div class="metric"><div class="row"><span>${l}</span><b class="num">${v == null ? '—' : v + '%'}</b></div><div class="bar ${cls}"><i style="width:${v || 0}%"></i></div></div>`;
-    return `<div class="card"><div class="card-h"><div><h2>${sub.icon} ${esc(subjName(sub))}</h2><div class="small muted">${t ? L('المدرس: ', 'Teacher: ') + esc(tName(t)) + ' · ' : ''}<span class="num">${r.n}</span> ${L('حصة', 'sessions')}</div></div>
+    return `<div class="card"><div class="card-h"><div><h2>${esc(sub.icon)} ${esc(subjName(sub))}</h2><div class="small muted">${t ? L('المدرس: ', 'Teacher: ') + esc(tName(t)) + ' · ' : ''}<span class="num">${r.n}</span> ${L('حصة', 'sessions')}</div></div>
       <div style="text-align:center"><div class="kpi-big num">${r.overall == null ? '—' : r.overall + '%'}</div><span class="pill ${r.overall >= 75 ? 'ok' : r.overall >= 60 ? 'warn' : 'bad'}">${grade(r.overall)}</span></div></div>
       <div class="grid g2" style="gap:6px 28px">${m(L('نسبة الحضور', 'Attendance'), r.att, 'ok')}${m(L('التفاعل', 'Engagement'), r.ev?.interaction)}${m(L('الواجب', 'Homework'), r.ev?.homework ?? r.hwAvg, 'gold')}${m(L('الالتزام', 'Commitment'), r.ev?.commitment)}</div>
       ${r.ev?.note ? `<div class="notice info">${icon('chat')} <div><b>${L('ملاحظة المدرس:', 'Teacher note:')}</b> ${esc(r.ev.note)}</div></div>` : ''}</div>`; }).join('') || `<div class="card">${emptyBox(L('التقرير هيظهر بعد أول حصة', 'Report appears after the first session'), 'chart')}</div>`}
@@ -292,8 +299,8 @@ function chatView(me, threads, opts = {}) {
   msgs.forEach(m => { if (m.from !== me) { if (opts.side === 's') m.readS = true; else m.readT = true; } });
   const cur = threads.find(t => t.key === CHAT_SEL);
   return `<div class="chat"><div class="th">${threads.map(t => { const last = D.messages.filter(m => m.thread === t.key && !m.blocked).sort((a, b) => b.at.localeCompare(a.at))[0];
-      return `<div class="t ${t.key === CHAT_SEL ? 'on' : ''}" onclick="CHAT_SEL='${t.key}';render()"><span class="av" style="background:${t.color || 'var(--navy)'}">${esc(initials(t.name))}</span><div class="x"><div><b>${esc(t.name)}</b></div><div class="small muted">${esc(last ? last.text : t.sub || '')}</div></div></div>`; }).join('') || `<div class="empty small">${L('لا توجد محادثات', 'No conversations')}</div>`}</div>
-    <div class="cv">${cur ? `<div class="top"><span class="av" style="background:${cur.color || 'var(--navy)'}">${esc(initials(cur.name))}</span><div><b>${esc(cur.name)}</b><div class="small muted">${esc(cur.sub || '')}</div></div></div>
+      return `<div class="t ${t.key === CHAT_SEL ? 'on' : ''}" onclick="CHAT_SEL='${t.key}';render()"><span class="av" style="background:${safeColor(t.color)}">${esc(initials(t.name))}</span><div class="x"><div><b>${esc(t.name)}</b></div><div class="small muted">${esc(last ? last.text : t.sub || '')}</div></div></div>`; }).join('') || `<div class="empty small">${L('لا توجد محادثات', 'No conversations')}</div>`}</div>
+    <div class="cv">${cur ? `<div class="top"><span class="av" style="background:${safeColor(cur.color)}">${esc(initials(cur.name))}</span><div><b>${esc(cur.name)}</b><div class="small muted">${esc(cur.sub || '')}</div></div></div>
       <div class="chat-note">${icon('shield')} ${L('للحفاظ على الخصوصية، غير مسموح بتبادل أرقام الهواتف أو الإيميلات أو حسابات التواصل. أي رسالة فيها بيانات تواصل بتتحجب تلقائياً وبتوصل للإدارة.', 'For privacy, sharing phone numbers, emails or social accounts is not allowed. Such messages are blocked automatically and reported to admin.')}</div>
       <div class="msgs" id="msgs">${msgs.map(m => m.blocked ? (m.by === me ? `<div class="msg blocked">${icon('ban')} ${L('تم حجب رسالتك لأنها تحتوي على بيانات تواصل', 'Your message was blocked because it contains contact details')}</div>` : '') : `<div class="msg ${m.from === me ? 'me' : ''}">${esc(m.text)}<time class="num">${fmtDT(m.at)}</time></div>`).join('') || `<div class="empty small">${L('ابدأ المحادثة', 'Start the conversation')}</div>`}</div>
       <div class="comp"><input class="input" id="chat_in" placeholder="${L('اكتب رسالتك…', 'Type a message…')}" onkeydown="if(event.key==='Enter')sendChat('${me}')"><button class="btn" onclick="sendChat('${me}')">${icon('send')}</button></div>` : emptyBox(L('اختار محادثة', 'Pick a conversation'), 'chat')}</div></div>`;
@@ -329,8 +336,8 @@ function S_settings(u) {
   <div class="card"><h3 style="margin-bottom:14px">${L('البيانات العامة', 'General')}</h3>
     <div class="row" style="margin-bottom:14px"><span class="av lg">${esc(initials(u.parent))}</span><div><b>${esc(u.parent)}</b><div class="small muted">${L('ولي أمر', 'Parent of')} ${esc(u.name)}</div></div></div>
     <div class="form-grid"><div class="field"><label>${L('اسم ولي الأمر', 'Parent name')}</label><input class="input" id="st_parent" value="${esc(u.parent)}"></div><div class="field"><label>${L('اسم الطالب', 'Student name')}</label><input class="input" id="st_name" value="${esc(u.name)}"></div>
-    <div class="field"><label>${L('البريد', 'Email')} ${u.confirmed ? statusPill('paid').replace(L('مدفوع', 'Paid'), L('مؤكَّد', 'Verified')) : ''}</label><input class="input" value="${esc(u.email)}" dir="ltr" disabled></div><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile')}</label><input class="input" id="st_phone" value="${esc(u.phone)}" dir="ltr"></div>
-    <div class="field"><label>${L('الدولة', 'Country')}</label><select class="input" id="st_country">${D.countries.map(c => `<option value="${c.code}" ${c.code === u.country ? 'selected' : ''}>${c.flag} ${L(c.ar, c.en)}</option>`).join('')}</select></div>
+    <div class="field"><label>${L('البريد', 'Email')} ${u.confirmed ? statusPill('paid').replace(L('مدفوع', 'Paid'), L('مؤكَّد', 'Verified')) : ''}</label><input class="input" value="${esc(u.email)}" dir="ltr" disabled></div><div class="field"><label class="req">${L('رقم الموبايل', 'Mobile')}</label><input class="input" id="st_phone" value="${esc(u.phone || '')}" dir="ltr"></div>
+    <div class="field"><label>${L('الدولة', 'Country')}${D.enrollments.some(e => e.studentId === u.id) && IS_LIVE ? ` <span class="lock">${icon('lock')} ${L('بتتغير من الإدارة بعد أول باقة', 'changed by admin after the first package')}</span>` : ''}</label><select class="input" id="st_country" ${D.enrollments.some(e => e.studentId === u.id) && IS_LIVE ? 'disabled' : ''}>${D.countries.map(c => `<option value="${c.code}" ${c.code === u.country ? 'selected' : ''}>${c.flag} ${L(c.ar, c.en)}</option>`).join('')}</select></div>
     <div class="field"><label>${L('الصف', 'Grade')}</label><select class="input" id="st_grade">${STAGES.filter(s => s.id !== 'summer').map(s => `<optgroup label="${L(s.ar, s.en)}">${s.grades.map(g => `<option value="${s.id}:${g}" ${u.grade === g ? 'selected' : ''}>${gradeName(g)}</option>`).join('')}</optgroup>`).join('')}</select></div></div>
     <button class="btn" onclick="S_saveProfile()">${L('حفظ', 'Save')}</button></div>
   <div><div class="card"><h3 style="margin-bottom:10px">${L('تفضيلات الإيميل', 'Email preferences')}</h3>
@@ -341,7 +348,8 @@ function S_settings(u) {
 }
 function S_saveProfile() {
   const u = currentUser(); const ph = val('st_phone'); if (ph.replace(/\D/g, '').length < 8) return toast(L('رقم الموبايل إجباري', 'Mobile number is required'), 'bad');
-  const [st, g] = val('st_grade').split(':'); Object.assign(u, { parent: val('st_parent'), name: val('st_name'), phone: ph, country: val('st_country'), stage: st, grade: g }); SB.stage = null; SP.stage = null; save(); toast(L('تم الحفظ', 'Saved'), 'ok'); render();
+  const [st, g] = val('st_grade').split(':'); Object.assign(u, { parent: val('st_parent'), name: val('st_name'), phone: ph, country: val('st_country'), stage: st, grade: g });
+  myKids(u).forEach(k => { if (k !== u) Object.assign(k, { parent: u.parent, phone: ph }); }); SB.stage = null; SP.stage = null; save(); toast(L('تم الحفظ', 'Saved'), 'ok'); render();
 }
 function S_inbox() {
   const u = currentUser(); const ems = D.emails.filter(e => e.to === u.email).sort((a, b) => b.at.localeCompare(a.at));
@@ -349,4 +357,100 @@ function S_inbox() {
   modal(L('صندوق الإيميل', 'Email inbox') + ` · <span class="num small">${esc(u.email)}</span>`, `<div class="notice info" style="margin-bottom:12px">${L('في النسخة الحقيقية دي إيميلات بتتبعت فعلاً على بريدك. هنا بنعرضها عشان تشوف شكلها.', 'In production these are real emails sent to your inbox. Shown here as a preview.')}</div>
     ${ems.slice(0, 15).map(e => `<div class="mail" style="margin-bottom:10px"><div class="mh row between"><b>${esc(e.subject)}</b>${statusPill(e.status)}</div><div class="mb"><div class="tiny muted num" style="margin-bottom:6px">${e.status === 'scheduled' ? L('هيتبعت: ', 'Will send: ') : ''}${fmtDT(e.at)}</div><div style="white-space:pre-line">${esc(e.body)}</div></div></div>`).join('') || emptyBox(L('لا توجد رسائل', 'No emails'), 'mail')}`, '', { wide: true });
   render();
+}
+
+// خلفية كارت المادة: صورة المادة لو موجودة، وإلا لون
+function subjBg(s, i, pal) { const img = safeImg(s.image); return img ? `background:linear-gradient(180deg,rgba(6,23,63,.05) 30%,rgba(6,23,63,.85)),url('${esc(img).replace(/'/g, '%27')}') center/cover` : `background:${pal[i % pal.length]}`; }
+
+/* =====================================================================
+   ولي الأمر: أكتر من طفل في نفس الحساب
+   ===================================================================== */
+function myKids(u) {
+  u = u || currentUser(); if (!u) return [];
+  const list = IS_LIVE && LIVE.user ? D.students.filter(s => s.userId === LIVE.user.id) : D.students.filter(s => s.email && u.email && s.email.toLowerCase() === u.email.toLowerCase());
+  return (list.length ? list : [u]).slice().sort((a, b) => String(a.joined || '').localeCompare(String(b.joined || '')));
+}
+function S_switchKid(id) {
+  if (!myKids().some(k => k.id === id)) return; APP.sessions.student = id; try { localStorage.setItem('nexium_kid', id); } catch (e) {}
+  if (!IS_LIVE) saveSession(); SB.stage = null; SP.stage = null; SB.subject = null; CHAT_SEL = null; go(APP.view === 'family' ? 'home' : APP.view === 'session' ? 'home' : APP.view);
+}
+// المستوى التعليمي = متوسط التقييم الإجمالي في كل المواد
+function kidLevel(k) {
+  const subs = [...new Set(D.sessions.filter(s => s.studentId === k.id && s.subjectId).map(s => s.subjectId))];
+  const vals = subs.map(sid => studentEval(k.id, sid).overall).filter(v => v != null);
+  return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+}
+function kidAlerts(k) {
+  const out = []; const nm = esc(String(k.name).split(' ')[0]);
+  D.enrollments.filter(e => e.studentId === k.id && ['paid', 'partial'].includes(e.status)).forEach(e => { const p = pkgState(e); const sub = esc(subjName(subjById(e.subjectId)));
+    if (p.st === 'expired') out.push({ k: 'bad', t: L(`باقة ${sub} لـ ${nm} انتهت صلاحيتها وكان باقي فيها ${p.remaining} حصة`, `${nm}’s ${sub} package expired with ${p.remaining} sessions left`), e: e.id });
+    else if (p.st === 'expiring') out.push({ k: 'warn', t: p.remaining <= 2 ? L(`باقة ${sub} لـ ${nm} قربت تخلص: باقي ${p.remaining} حصة`, `${nm}’s ${sub} package is almost used: ${p.remaining} left`) : L(`باقة ${sub} لـ ${nm} هتنتهي بعد ${p.days} يوم`, `${nm}’s ${sub} package ends in ${p.days} days`), e: e.id });
+    else if (p.st === 'finished' && !D.enrollments.some(x => x.studentId === k.id && x.subjectId === e.subjectId && x !== e && ['pending', 'paid', 'partial'].includes(x.status) && pkgState(x).st !== 'finished')) out.push({ k: 'warn', t: L(`حصص ${sub} لـ ${nm} خلصت – جدّد عشان يكمّل`, `${nm} used all ${sub} sessions – renew to continue`), e: e.id }); });
+  const abs = D.sessions.filter(s => s.studentId === k.id && s.status === 'absent' && Date.now() - new Date(s.start).getTime() < 30 * DAY).length;
+  if (abs >= 2) out.push({ k: 'warn', t: L(`${nm} غاب ${abs} حصص في آخر 30 يوم`, `${nm} missed ${abs} sessions in the last 30 days`) });
+  const lv = kidLevel(k); if (lv != null && lv < 60) out.push({ k: 'bad', t: L(`مستوى ${nm} محتاج متابعة (${lv}%)`, `${nm}’s level needs attention (${lv}%)`) });
+  if (D.enrollments.some(e => e.studentId === k.id && e.status === 'pending')) out.push({ k: 'info', t: L(`في دفعة لـ ${nm} بانتظار تأكيد الإدارة`, `A payment for ${nm} is awaiting approval`) });
+  return out;
+}
+function S_family(u) {
+  const kids = myKids(u); const C = cOfCur;
+  const all = kids.flatMap(k => kidAlerts(k).map(a => ({ ...a, kid: k })));
+  const card = k => {
+    const ss = D.sessions.filter(s => s.studentId === k.id); const done = ss.filter(s => s.status === 'done').length, abs = ss.filter(s => s.status === 'absent').length;
+    const att = done + abs ? Math.round(done / (done + abs) * 100) : null; const lv = kidLevel(k);
+    const mStart = new Date(); mStart.setDate(1); mStart.setHours(0, 0, 0, 0); const inM = s => new Date(s.start) >= mStart && new Date(s.start) <= new Date();
+    const next = ss.filter(s => s.status === 'booked' && sEnd(s) > Date.now()).sort((a, b) => a.start.localeCompare(b.start))[0];
+    const pk = D.enrollments.filter(e => e.studentId === k.id && e.status !== 'withdrawn').sort((a, b) => String(b.created).localeCompare(String(a.created)));
+    return `<div class="card kid-card ${k.id === u.id ? 'cur' : ''}"><div class="row between" style="margin-bottom:12px"><div class="row"><span class="av lg" style="background:${['#0B2463', '#A67812', '#1F9D6B', '#7B3FA0', '#C2410C'][kids.indexOf(k) % 5]}">${esc(initials(k.name))}</span><div><h3>${esc(k.name)}</h3><div class="small muted">${stageName(k.stage)} · ${gradeName(k.grade)}</div></div></div>
+      <button class="btn sm ${k.id === u.id ? '' : 'ghost'}" onclick="S_switchKid('${k.id}')">${L('افتح حساب', 'Open')} ${esc(String(k.name).split(' ')[0])}</button></div>
+      <div class="grid g3 kid-stats"><div><span class="small muted">${L('المستوى التعليمي', 'Level')}</span><b class="num">${lv == null ? '—' : lv + '%'}</b><span class="pill ${lv >= 75 ? 'ok' : lv >= 60 ? 'warn' : lv == null ? 'gray' : 'bad'}">${grade(lv)}</span></div>
+        <div><span class="small muted">${L('حضر / غاب', 'Attended / absent')}</span><b class="num">${done} / ${abs}</b><span class="tiny muted">${L('الشهر ده:', 'This month:')} <span class="num">${ss.filter(s => s.status === 'done' && inM(s)).length} / ${ss.filter(s => s.status === 'absent' && inM(s)).length}</span></span></div>
+        <div><span class="small muted">${L('نسبة الحضور', 'Attendance')}</span><b class="num">${att == null ? '—' : att + '%'}</b><div class="bar ok"><i style="width:${att || 0}%"></i></div></div></div>
+      ${next ? `<div class="small" style="margin:12px 0 4px">${icon('cal')} ${L('الحصة الجاية:', 'Next session:')} <b>${esc(subjName(subjById(next.subjectId)))}</b> · <span class="num">${fmtDT(next.start)}</span></div>` : `<div class="small muted" style="margin:12px 0 4px">${L('مفيش حصص محجوزة', 'No booked sessions')}</div>`}
+      <h4 style="margin:14px 0 8px">${L('الباقات', 'Packages')}</h4>
+      ${pk.length ? pk.map(e => { const p = pkgState(e); const sub = subjById(e.subjectId); const pill = { active: ['ok', L('سارية', 'Active')], expiring: ['warn', L('قربت تخلص', 'Ending soon')], expired: ['bad', L('انتهت الصلاحية', 'Expired')], finished: ['gray', L('خلصت الحصص', 'Used up')], pending: ['info', L('بانتظار تأكيد الدفع', 'Awaiting approval')] }[p.st] || ['gray', ''];
+        return `<div class="pkg-row"><div class="row between"><b>${esc(sub?.icon || '')} ${esc(subjName(sub))}</b><span class="pill ${pill[0]}">${pill[1]}</span></div>
+          <div class="bar gold" style="margin:6px 0"><i style="width:${e.sessions ? Math.min(100, p.used / e.sessions * 100) : 0}%"></i></div>
+          <div class="row between small"><span>${L('باقي', 'Left')} <b class="num">${p.remaining}</b> ${L('من', 'of')} <span class="num">${e.sessions}</span> ${L('حصة', 'sessions')}</span>${e.to && p.st !== 'pending' ? `<span class="${p.st === 'expired' ? 'neg' : ''}">${p.st === 'expired' ? L('انتهت يوم', 'Ended') : L('تنتهي', 'Ends')} <span class="num">${e.to}</span>${p.days >= 0 ? ` · ${L('باقي', '')} <b class="num">${p.days}</b> ${L('يوم', 'days left')}` : ''}</span>` : ''}</div>
+          ${['expiring', 'expired', 'finished'].includes(p.st) ? `<button class="btn sm gold" style="margin-top:8px" onclick="S_renew('${e.id}')">${icon('plus')} ${L('جدّد الباقة', 'Renew package')}</button>` : ''}</div>`; }).join('') : `<div class="small muted">${L('لسه مفيش باقات', 'No packages yet')} · <button class="btn link" onclick="S_switchKid('${k.id}');go('prices')">${L('اختار باقة', 'Choose a package')}</button></div>`}</div>`;
+  };
+  return `<div class="page-h"><div><div class="crumbs">${L('ولي الأمر', 'Parent')}</div><h1>${L('أولادي', 'My children')}</h1><p>${L('متابعة كل طفل لوحده: المستوى، الحضور والغياب، والباقات والأيام المتبقية', 'Follow each child: level, attendance and packages with days left')}</p></div>
+    <button class="btn gold" onclick="S_addChild()">${icon('plus')} ${L('إضافة طفل', 'Add a child')}</button></div>
+    ${all.length ? `<div class="card" style="margin-bottom:16px"><h3 style="margin-bottom:10px">${icon('bell')} ${L('تنبيهات', 'Alerts')}</h3>${all.map(a => `<div class="notice ${a.k}" style="margin-bottom:6px">${a.k === 'bad' ? icon('ban') : a.k === 'warn' ? icon('clock') : icon('wallet')} <div style="flex:1">${a.t}</div>${a.e ? `<button class="btn sm ${a.k === 'info' ? 'ghost' : 'gold'}" onclick="S_renew('${a.e}')">${L('جدّد', 'Renew')}</button>` : `<button class="btn sm ghost" onclick="S_switchKid('${a.kid.id}');go('report')">${L('التقرير', 'Report')}</button>`}</div>`).join('')}</div>` : ''}
+    <div class="grid g2 kids">${kids.map(card).join('')}</div>`;
+}
+const cOfCur = cur => D.countries.find(c => c.cur === cur) || countryBy('SA');
+function S_renew(eid) {
+  const e = D.enrollments.find(x => x.id === eid); if (!e) return; const sub = subjById(e.subjectId);
+  if (currentUser()?.id !== e.studentId) S_switchKid(e.studentId);
+  SP.stage = sub.stage; SP.subject = sub.id;
+  if (pricesOn('students') && PACKAGES.some(p => p.n === e.sessions)) { go('prices'); setTimeout(() => S_checkout(sub.id, e.sessions), 50); } else go('prices');
+}
+function S_addChild() {
+  modal(L('إضافة طفل لحسابك', 'Add a child to your account'), `<p class="small muted" style="margin-top:0">${L('هيتضاف تحت نفس حسابك ونفس بيانات التواصل، وتقدر تحجزله وتتابعه لوحده.', 'Added under the same account and contact details; book and follow them separately.')}</p>
+    <div class="field"><label class="req">${L('اسم الطالب', 'Student name')}</label><input class="input" id="ac_n" maxlength="80"></div>
+    <div class="field"><label class="req">${L('الصف', 'Grade')}</label><select class="input" id="ac_g">${STAGES.filter(s => s.id !== 'summer').map(s => `<optgroup label="${L(s.ar, s.en)}">${s.grades.map(g => `<option value="${s.id}:${g}">${gradeName(g)}</option>`).join('')}</optgroup>`).join('')}</select></div>`,
+    `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="S_saveChild()">${L('إضافة', 'Add')}</button>`);
+  setTimeout(() => $('#ac_n')?.focus(), 50);
+}
+async function S_saveChild() {
+  const name = val('ac_n'); const [st, g] = val('ac_g').split(':'); if (name.length < 2) return toast(L('اكتب اسم الطالب', 'Enter the student’s name'), 'bad');
+  const u = currentUser(); let id;
+  if (IS_LIVE) { const { data, error } = await LIVE.sb.rpc('add_child', { p_name: name, p_stage: st, p_grade: g }); if (error) return toast(liveErr(error.message), 'bad'); id = data; await liveLoad(); }
+  else { id = uid('s'); D.students.push({ id, name, parent: u.parent, email: u.email, phone: u.phone, country: u.country, stage: st, grade: g, pass: u.pass, confirmed: u.confirmed, provider: u.provider, active: true, joined: new Date().toISOString(), withdrawn: false }); save(); }
+  closeModal(); toast(L('تمت إضافة ', 'Added ') + name + ' ✓', 'ok'); APP.view = 'family'; render();
+}
+
+/* ---------- تسجيلات الحصص ---------- */
+function S_recordings(u) {
+  const rec = D.sessions.filter(s => s.studentId === u.id && safeUrl(s.recording)).sort((a, b) => b.start.localeCompare(a.start));
+  const subs = [...new Set(rec.map(s => s.subjectId))]; const f = APP.params.sub && subs.includes(APP.params.sub) ? APP.params.sub : 'all';
+  const list = rec.filter(s => f === 'all' || s.subjectId === f);
+  const missing = D.sessions.filter(s => s.studentId === u.id && s.status === 'done' && !safeUrl(s.recording)).length;
+  return `<div class="page-h"><div><div class="crumbs">${L('الطالب › التسجيلات', 'Student › Recordings')}</div><h1>${L('تسجيلات حصصي', 'My recordings')}</h1><p>${L('ارجع لأي حصة فاتت وذاكرها تاني', 'Go back to any past session and review it')}</p></div></div>
+    ${subs.length > 1 ? `<div class="tabs"><button class="${f === 'all' ? 'on' : ''}" onclick="go('recordings')">${L('الكل', 'All')} <span class="num">(${rec.length})</span></button>${subs.map(id => `<button class="${f === id ? 'on' : ''}" onclick="go('recordings',{sub:'${id}'})">${esc(subjName(subjById(id)))} <span class="num">(${rec.filter(s => s.subjectId === id).length})</span></button>`).join('')}</div>` : ''}
+    ${list.length ? `<div class="rec-grid">${list.map(s => `<div class="rec"><a class="rec-play" href="${esc(safeUrl(s.recording))}" target="_blank" rel="noopener noreferrer" aria-label="${L('تشغيل', 'Play')}">${icon('video')}</a><div class="rec-tx"><b>${esc(subjName(subjById(s.subjectId)))}</b><div class="small muted"><span class="num">${fmtDT(s.start)}</span> · ${esc(tName(tchById(s.teacherId)))}</div>${s.objectives ? `<div class="small" style="margin-top:4px">${esc(s.objectives)}</div>` : ''}
+      <div class="row" style="gap:6px;margin-top:8px"><a class="btn sm gold" href="${esc(safeUrl(s.recording))}" target="_blank" rel="noopener noreferrer">${icon('video')} ${L('مشاهدة التسجيل', 'Watch')}</a><button class="btn sm ghost" onclick="go('session',{id:'${s.id}'})">${icon('file')} ${L('تقرير الحصة', 'Report')}</button></div></div></div>`).join('')}</div>`
+      : `<div class="card">${emptyBox(L('لسه مفيش تسجيلات – المدرس بيضيف لينك التسجيل بعد الحصة', 'No recordings yet – the teacher adds the link after each session'), 'video')}</div>`}
+    ${missing ? `<div class="small muted sec">${icon('clock')} <span class="num">${missing}</span> ${L('حصة خلصت ولسه التسجيل بتاعها متضافش', 'finished sessions have no recording yet')}</div>` : ''}`;
 }

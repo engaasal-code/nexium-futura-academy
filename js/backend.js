@@ -13,13 +13,13 @@ const LIVE = { on: IS_LIVE, sb: null, profile: null, snap: {}, syncing: false, p
 const MAP = [
   { key: 'students', table: 'students', cols: { id: 'id', userId: 'user_id', name: 'name', parent: 'parent', stage: 'stage', grade: 'grade', country: 'country', active: 'active', confirmed: 'confirmed', provider: 'provider', joined: 'joined', addedBy: 'added_by', withdrawn: 'withdrawn' },
     skip: ['email', 'phone', 'pass'], ro: ['user_id', 'confirmed', 'provider'], priv: { table: 'student_private', fk: 'student_id', cols: { email: 'email', phone: 'phone' } } },
-  { key: 'teachers', table: 'teachers', cols: { id: 'id', userId: 'user_id', name: 'name', nameEn: 'name_en', bio: 'bio', bioEn: 'bio_en', youtube: 'youtube', zoom: 'zoom', color: 'color', camera: 'camera', active: 'active', badge: 'badge', addedStudents: 'added_students' },
+  { key: 'teachers', table: 'teachers', cols: { id: 'id', userId: 'user_id', name: 'name', nameEn: 'name_en', bio: 'bio', bioEn: 'bio_en', youtube: 'youtube', zoom: 'zoom', color: 'color', camera: 'camera', active: 'active', badge: 'badge', addedStudents: 'added_students', photo: 'photo', baseRating: 'base_rating', baseCount: 'base_count' },
     skip: ['email', 'phone', 'pass', 'subjects', 'rateLocked'], ro: ['user_id'], special: 'teachers', priv: { table: 'teacher_private', fk: 'teacher_id', cols: { email: 'email', phone: 'phone', rates: 'rates', rateLocked: 'rate_locked' } } },
   { key: 'staff', table: 'staff', cols: { id: 'id', userId: 'user_id', name: 'name', email: 'email', role: 'role' }, skip: ['pass'], ro: ['user_id'] },
-  { key: 'subjects', table: 'subjects', cols: { id: 'id', key: 'key', stage: 'stage', ar: 'ar', en: 'en', icon: 'icon', visible: 'visible', pps: 'pps', countryPps: 'country_pps' } },
+  { key: 'subjects', table: 'subjects', cols: { id: 'id', key: 'key', stage: 'stage', ar: 'ar', en: 'en', icon: 'icon', visible: 'visible', pps: 'pps', countryPps: 'country_pps', image: 'image' } },
   { key: 'enrollments', table: 'enrollments', cols: { id: 'id', studentId: 'student_id', subjectId: 'subject_id', sessions: 'sessions', amount: 'amount', paid: 'paid', currency: 'currency', method: 'method', status: 'status', created: 'created', from: 'from_date', to: 'to_date', receipt: 'receipt', approvedBy: 'approved_by' } },
   { key: 'sessions', table: 'sessions', cols: { id: 'id', teacherId: 'teacher_id', subjectId: 'subject_id', studentId: 'student_id', enrollmentId: 'enrollment_id', start: 'start_at', dur: 'dur', status: 'status', zoom: 'zoom', objectives: 'objectives', material: 'material', assignment: 'assignment', recording: 'recording', attendedAt: 'attended_at' } },
-  { key: 'homework', table: 'homework', cols: { id: 'id', sessionId: 'session_id', studentId: 'student_id', file: 'file', note: 'note', at: 'at', grade: 'grade', max: 'max', feedback: 'feedback' } },
+  { key: 'homework', table: 'homework', cols: { id: 'id', sessionId: 'session_id', studentId: 'student_id', file: 'file', note: 'note', at: 'at', grade: 'grade', max: 'max', feedback: 'feedback', marked: 'marked', marksFile: 'marks_file', markedAt: 'marked_at' } },
   { key: 'evals', table: 'evals', cols: { id: 'id', studentId: 'student_id', teacherId: 'teacher_id', subjectId: 'subject_id', interaction: 'interaction', homework: 'homework', commitment: 'commitment', note: 'note', at: 'at' } },
   { key: 'certs', table: 'certs', cols: { id: 'id', studentId: 'student_id', teacherId: 'teacher_id', type: 'type', title: 'title', reason: 'reason', at: 'at' } },
   { key: 'ratings', table: 'ratings', cols: { id: 'id', teacherId: 'teacher_id', studentId: 'student_id', stars: 'stars', comment: 'comment', at: 'at' }, noExtra: true },
@@ -30,7 +30,7 @@ const MAP = [
   { key: 'withdrawals', table: 'withdrawals', cols: { id: 'id', studentId: 'student_id', enrollmentId: 'enrollment_id', reason: 'reason', note: 'note', refund: 'refund', date: 'date' }, noExtra: true },
   { key: 'pages', table: 'pages', cols: { id: 'id', slug: 'slug', type: 'type', title: 'title', body: 'body', status: 'status', footer: 'footer', seo: 'seo', updated: 'updated' }, noExtra: true },
 ];
-const SETTING_KEYS = ['perms', 'countries', 'settings', 'methods', 'social', 'footerAbout', 'withdrawReasons'];
+const SETTING_KEYS = ['perms', 'countries', 'settings', 'methods', 'social', 'footerAbout', 'withdrawReasons', 'home'];
 const stable = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.keys(x).sort().reduce((o, kk) => (o[kk] = x[kk], o), {}) : x);
 
 function toRow(m, o) {
@@ -50,7 +50,7 @@ function privRow(m, o) {
 function fromRow(m, r) {
   const o = {}; Object.entries(m.cols).forEach(([f, c]) => { if (r[c] !== undefined) o[f] = r[c] === null ? (['name', 'parent', 'bio', 'note', 'objectives', 'material', 'assignment', 'recording', 'feedback', 'zoom', 'comment'].includes(f) ? '' : null) : r[c]; });
   if (r.extra) Object.assign(o, r.extra);
-  ['amount', 'paid', 'refund', 'grade', 'max'].forEach(f => { if (o[f] != null && typeof o[f] === 'string') o[f] = +o[f]; });
+  ['amount', 'paid', 'refund', 'grade', 'max', 'baseRating'].forEach(f => { if (typeof o[f] === 'string' && o[f].trim() !== '' && !isNaN(+o[f])) o[f] = +o[f]; }); // (الصف الدراسي 'G11' يفضل نص)
   if (o.from && typeof o.from === 'string') o.from = o.from.slice(0, 10); if (o.to && typeof o.to === 'string') o.to = o.to.slice(0, 10);
   return o;
 }
@@ -73,7 +73,9 @@ async function liveLoad() {
   N.messages.forEach(m => { if (bo[m.id]) m.original = bo[m.id]; });
   const st = Object.fromEntries(data.settings.map(r => [r.key, r.value]));
   SETTING_KEYS.forEach(k => { N[k] = st[k] !== undefined ? st[k] : defaults[k]; });
-  N.perms = Object.assign(defaultPerms(), N.perms || {});
+  const dp = defaultPerms(); N.perms = Object.fromEntries(Object.keys(dp).map(r => [r, Object.assign({}, dp[r], (N.perms || {})[r] || {})]));
+  N.home = homeMerge(N.home); Object.defineProperty(N.home, '__m', { value: true, enumerable: false });
+  if (LIVE.profile?.role === 'ceo') { const rr = await sb.rpc('list_reset_requests'); N.resets = Array.isArray(rr.data) ? rr.data : []; } else N.resets = [];
   D = N; takeSnapshot();
 }
 function takeSnapshot() {
@@ -127,7 +129,11 @@ function liveErr(msg) {
     ['ACCOUNT_SUSPENDED', L('الحساب موقوف – تواصل مع الإدارة', 'Account suspended – contact admin')], ['METHOD_DISABLED', L('طريقة الدفع دي متوقفة حالياً', 'This payment method is disabled')],
     ['PERMISSION', L('مش مسموح بالصلاحيات الحالية', 'Not allowed with current permissions')], ['row-level security', L('مش مسموح بالصلاحيات الحالية', 'Not allowed with current permissions')], ['permission denied', L('مش مسموح بالصلاحيات الحالية', 'Not allowed with current permissions')],
     ['Invalid login credentials', L('البريد أو كلمة المرور غير صحيحة', 'Wrong email or password')], ['Email not confirmed', L('لازم تأكد بريدك الإلكتروني الأول – افتح الرسالة اللي وصلتك', 'Please confirm your email first – check your inbox')],
-    ['User already registered', L('البريد ده مسجّل بالفعل – سجّل دخول', 'This email is already registered – log in')], ['Password should be', L('كلمة المرور 6 أحرف على الأقل', 'Password must be at least 6 characters')],
+    ['User already registered', L('البريد ده مسجّل بالفعل – سجّل دخول', 'This email is already registered – log in')], ['Password should be', L('كلمة المرور ضعيفة – 8 أحرف على الأقل وفيها حروف وأرقام', 'Weak password – 8+ characters with letters and numbers')],
+    ['BAD_FILE', L('الملف مش مقبول – ارفعه تاني', 'File not accepted – please upload again')], ['CONTACT_NOT_ALLOWED', L('غير مسموح بكتابة بيانات تواصل', 'Contact details are not allowed')],
+    ['INVITE_CODE', L('كود التفعيل غلط – اطلب كود جديد من الإدارة', 'Wrong activation code – ask the admin for a new one')], ['Database error saving new user', L('كود التفعيل غلط أو البريد مش مسجّل', 'Wrong activation code or email not registered')],
+    ['PACKAGE_EXPIRED', L('صلاحية الباقة انتهت – جدّد الباقة', 'The package has expired – please renew')], ['NOT_YOUR_CHILD', L('الطالب ده مش مسجّل في حسابك', 'This student is not on your account')], ['TOO_MANY_CHILDREN', L('وصلت للحد الأقصى لعدد الأولاد', 'Maximum number of children reached')],
+    ['TOO_MANY_PENDING', L('عندك طلبات دفع كتير بانتظار المراجعة', 'Too many payments awaiting review')], ['REQUEST_CLOSED', L('الطلب ده اتقفل', 'This request is closed')], ['NO_INVITE', L('الحساب ده اتفعّل بالفعل', 'This account is already activated')],
     ['rate limit', L('محاولات كتير – استنى شوية وجرّب تاني', 'Too many attempts – wait a bit and retry')], ['Failed to fetch', L('مفيش اتصال بالإنترنت أو السيرفر', 'No connection to the server')], ['duplicate key', L('البيانات دي موجودة بالفعل', 'This already exists')]];
   const f = T.find(([k]) => m.toLowerCase().includes(k.toLowerCase())); return f ? f[1] : L('حصل خطأ: ', 'Error: ') + m;
 }
@@ -160,19 +166,23 @@ async function loadPublic() {
   D = { v: 1, subjects: (sj.data || []).map(r => fromRow(MAP.find(m => m.key === 'subjects'), r)), teachers: [], students: [], staff: [], sessions: [], enrollments: [], homework: [], evals: [], certs: [], ratings: [], messages: [], emails: [], payouts: [], expenses: [], withdrawals: [],
     pages: (pg.data || []).map(r => fromRow(MAP.find(m => m.key === 'pages'), r)) };
   SETTING_KEYS.forEach(k => { D[k] = map[k] !== undefined ? map[k] : defaults[k]; });
+  D.home = homeMerge(D.home); Object.defineProperty(D.home, '__m', { value: true, enumerable: false });
+  const pt = await sb.rpc('public_teachers'); D.pubTeachers = Array.isArray(pt.data) ? pt.data : [];
 }
 async function afterSignIn() {
   const sb = LIVE.sb; const { data: { user } } = await sb.auth.getUser(); if (!user) { LIVE.ready = true; return render(); }
   let prof = null; for (let i = 0; i < 4 && !prof; i++) { const r = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle(); prof = r.data; if (!prof) await new Promise(r => setTimeout(r, 600)); }
   if (!prof) { toast(L('الحساب لسه بيتجهز – جرّب تاني بعد لحظات', 'Account is being prepared – retry in a moment'), 'bad'); LIVE.ready = true; return render(); }
   LIVE.profile = prof; LIVE.user = user;
+  if (['supervisor', 'principal', 'ceo'].includes(prof.role) && !(await liveMfaPass(L('التحقق بخطوتين', '2-step verification'), afterSignIn))) { LIVE.ready = true; render(); return; }
   await liveLoad();
   APP.sessions = { [portalForRole(prof.role)]: prof.ref_id };
+  if (prof.role === 'student') { let k = null; try { k = localStorage.getItem('nexium_kid'); } catch (e) {} const kids = D.students.filter(s => s.userId === user.id); if (k && kids.some(s => s.id === k)) APP.sessions.student = k; LIVE.manyKids = kids.length > 1; }
   if (prof.role !== 'student' && prof.role !== 'teacher') APP.adminRole = prof.role;
   LIVE.ready = true;
   const want = portalForRole(prof.role);
   if (APP.portal !== want && !APP.publicPage) { APP.portal = want; location.hash = want === 'student' ? '' : want; }
-  APP.view = want === 'admin' ? 'overview' : 'home';
+  APP.view = want === 'admin' ? 'overview' : (prof.role === 'student' && LIVE.manyKids ? 'family' : 'home');
   render(); liveRealtime();
   const me = currentUser();
   if (prof.role === 'student' && me && (!me.phone || !me.name)) setTimeout(liveCompleteProfile, 300);
@@ -208,7 +218,7 @@ if (LIVE.on) {
     const f = { parent: val('r_parent'), name: val('r_name'), email: val('r_email'), phone: val('r_phone'), country: val('r_country'), stage: val('r_stage'), grade: val('r_grade'), pass: val('r_pass') };
     if (!f.parent || !f.name || !f.email || !f.phone || !f.pass) AUTH.err = L('كل الحقول المعلّمة بـ * مطلوبة', 'All * fields are required');
     else if (f.phone.replace(/\D/g, '').length < 8) AUTH.err = L('رقم الموبايل غير صحيح', 'Invalid mobile number');
-    else if (f.pass.length < 6) AUTH.err = L('كلمة المرور 6 أحرف على الأقل', 'Password must be 6+ characters');
+    else if (pwProblem(f.pass)) AUTH.err = pwProblem(f.pass);
     if (AUTH.err) return render();
     const { data, error } = await LIVE.sb.auth.signUp({ email: f.email, password: f.pass, options: { emailRedirectTo: location.origin + location.pathname, data: { parent: f.parent, name: f.name, phone: f.phone, country: f.country, stage: f.stage, grade: f.grade } } });
     if (error) { AUTH.err = liveErr(error.message); return render(); }
@@ -229,7 +239,7 @@ if (LIVE.on) {
 
   S_confirmBooking = async function () {
     if (!SB.slot) return;
-    const { data, error } = await LIVE.sb.rpc('book_slot', { p_slot: SB.slot, p_subject: SB.subject });
+    const { data, error } = await LIVE.sb.rpc('book_slot', { p_slot: SB.slot, p_subject: SB.subject, p_student: currentUser().id });
     if (error) return toast(liveErr(error.message), 'bad');
     await liveLoad(); closeModal(); const s = D.sessions.find(x => x.id === SB.slot) || fromRow(MAP.find(m => m.key === 'sessions'), data);
     modal(L('تم الحجز ✓', 'Booked ✓'), `<div style="text-align:center"><div style="font-size:48px">🎉</div><h3>${esc(subjName(subjById(s.subjectId)))} · ${esc(tName(tchById(s.teacherId)))}</h3><p class="num" style="font-size:16px;font-weight:700;color:var(--navy)">${fmtDT(s.start)}</p>
@@ -240,7 +250,7 @@ if (LIVE.on) {
     const c = window.__ck; if (!c.fileObj) return toast(L('ارفع صورة الإيصال الأول', 'Please upload the receipt'), 'bad');
     toast(L('جاري رفع الإيصال…', 'Uploading receipt…'));
     const path = await liveUpload('receipts', c.fileObj); if (!path) return;
-    const { error } = await LIVE.sb.rpc('request_package', { p_subject: c.sid, p_sessions: c.n, p_method: c.method, p_receipt: path });
+    const { error } = await LIVE.sb.rpc('request_package', { p_subject: c.sid, p_sessions: c.n, p_method: c.method, p_receipt: path, p_student: currentUser().id });
     if (error) return toast(liveErr(error.message), 'bad');
     closeModal(); await liveLoad(); toast(L('تم إرسال طلب الدفع – هنبلغك بالإيميل أول ما يتأكد', 'Payment submitted – we’ll email you once approved'), 'ok'); go('payments');
   };
@@ -280,44 +290,169 @@ async function liveUpload(bucket, file) {
 async function liveOpenFile(bucket, path) {
   const { data, error } = await LIVE.sb.storage.from(bucket).createSignedUrl(path, 600);
   if (error) return toast(liveErr(error.message), 'bad');
-  modal(L('الملف جاهز', 'File ready'), `<p class="muted" style="margin-top:0">${esc(path.split('/').pop())}</p><a class="btn gold" href="${esc(data.signedUrl)}" target="_blank" rel="noopener">${icon('eye')} ${L('فتح الملف', 'Open file')}</a><div class="tiny muted" style="margin-top:8px">${L('الرابط صالح لمدة 10 دقايق', 'Link valid for 10 minutes')}</div>`);
+  modal(L('الملف جاهز', 'File ready'), `<p class="muted" style="margin-top:0">${esc(path.split('/').pop())}</p><a class="btn gold" href="${esc(safeUrl(data.signedUrl))}" target="_blank" rel="noopener">${icon('eye')} ${L('فتح الملف', 'Open file')}</a><div class="tiny muted" style="margin-top:8px">${L('الرابط صالح لمدة 10 دقايق', 'Link valid for 10 minutes')}</div>`);
 }
 function fileLabel(path, bucket) {
   if (!path) return '—'; const name = String(path).split('/').pop().replace(/^\d+_/, '');
-  return LIVE.on && String(path).includes('/') ? `<button class="btn link" onclick="liveOpenFile('${bucket}','${esc(path)}')">📎 ${esc(name)}</button>` : `📎 ${esc(name)}`;
+  return LIVE.on && String(path).includes('/') ? `<button class="btn link" data-b="${esc(bucket)}" data-p="${esc(path)}" onclick="liveOpenFile(this.dataset.b,this.dataset.p)">📎 ${esc(name)}</button>` : `📎 ${esc(name)}`;
 }
+async function liveUploadBlob(bucket, blob, name) {
+  const safe = String(name).replace(/[^\w.\-]+/g, '_').slice(-80); const path = `${LIVE.user.id}/${Date.now()}_${safe}`;
+  const { error } = await LIVE.sb.storage.from(bucket).upload(path, blob, { upsert: false, contentType: blob.type || 'application/octet-stream' });
+  if (error) { toast(liveErr(error.message), 'bad'); return null; } return path;
+}
+
+/* ---------- نسيت كلمة المرور ----------
+   • الطلاب والمدرسين: رابط تغيير على إيميلهم (ولو الرسالة موصلتش: طلب مساعدة من الإدارة بكود)
+   • لوحة الإدارة: رابط التغيير بيروح على الإيميل المسجّل للحساب بس (حساب صاحب المنصة = إيميله)،
+     ولو الحساب مفعّل التحقق بخطوتين، الرابط لوحده مش كفاية للدخول */
+const FP = { tab: 'link' };
 function liveForgot() {
-  modal(L('نسيت كلمة المرور', 'Forgot password'), `<div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="fp_e" dir="ltr" value="${esc(val('l_email'))}"></div>`,
-    `<button class="btn gold" onclick="liveSendReset()">${L('إرسال رابط تغيير كلمة المرور', 'Send reset link')}</button>`);
+  const em = esc(val('l_email') || val('fp_e'));
+  if (APP.portal === 'admin') {
+    return modal(L('نسيت كلمة المرور – الإدارة', 'Forgot password – admin'), `<div class="notice info" style="margin-bottom:12px">${icon('shield')} <div>${L('رابط تغيير كلمة المرور بيتبعت على الإيميل المسجّل للحساب ده بس، وصالح لفترة قصيرة ولمرة واحدة. ولو الحساب مفعّل التحقق بخطوتين، هتحتاج كود التطبيق كمان.', 'The reset link is sent only to this account’s registered email, is short-lived and single-use. With 2-step verification on, you’ll also need the app code.')}</div></div>
+      <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="fp_e" dir="ltr" type="email" value="${em}"></div>`,
+      `<button class="btn gold" onclick="liveSendLink()">${L('إرسال رابط التغيير', 'Send reset link')}</button>`);
+  }
+  const tabs = `<div class="tabs" style="margin-bottom:14px"><button class="${FP.tab === 'link' ? 'on' : ''}" onclick="FP.tab='link';liveForgot()">${L('رابط على إيميلي', 'Email me a link')}</button><button class="${FP.tab === 'req' ? 'on' : ''}" onclick="FP.tab='req';liveForgot()">${L('الرسالة موصلتش؟', 'Didn’t get it?')}</button><button class="${FP.tab === 'code' ? 'on' : ''}" onclick="FP.tab='code';liveForgot()">${L('معايا كود', 'I have a code')}</button></div>`;
+  const body = FP.tab === 'link' ? `<p class="small muted" style="margin-top:0">${L('هنبعت رابط تغيير كلمة المرور على بريدك المسجّل. افتح الرابط واختار كلمة مرور جديدة.', 'We’ll email a reset link to your registered address. Open it and choose a new password.')}</p>
+      <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="fp_e" dir="ltr" type="email" value="${em}"></div>`
+    : FP.tab === 'req' ? `<div class="notice info" style="margin-bottom:12px">${icon('shield')} <div>${L('لو رسالة الرابط موصلتش (شوف الـ Spam الأول)، ابعت طلب للإدارة. بعد ما يتأكدوا إنك صاحب الحساب، هيوصلك <b>كود</b> على رقم الموبايل المسجّل عندنا.', 'If the link email didn’t arrive (check Spam first), send a request to the admin. Once they confirm it’s you, you’ll get a <b>code</b> on your registered mobile.')}</div></div>
+      <div class="field"><label>${L('البريد الإلكتروني المسجّل', 'Registered email')}</label><input class="input" id="fp_e" dir="ltr" type="email" value="${em}"></div>
+      <div class="field"><label>${L('ملاحظة للإدارة (اختياري)', 'Note to the admin (optional)')}</label><input class="input" id="fp_n" maxlength="200" placeholder="${L('مثال: اسم الطالب أو أفضل وقت للتواصل', 'e.g. student name or best time to call')}"></div>`
+    : `<div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="fp_e" dir="ltr" type="email" value="${em}"></div>
+      <div class="field"><label>${L('الكود اللي وصلك من الإدارة', 'Code from the admin')}</label><input class="input num" id="fp_c" dir="ltr" placeholder="XXXX-XXXX-XXXX" autocomplete="one-time-code" style="letter-spacing:2px;text-transform:uppercase"></div>
+      <div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="fp_p" dir="ltr" autocomplete="new-password" placeholder="${L('8 أحرف على الأقل – حروف وأرقام', '8+ characters – letters and numbers')}"></div>
+      <div class="field"><label>${L('تأكيد كلمة المرور', 'Confirm password')}</label><input class="input" type="password" id="fp_p2" dir="ltr" autocomplete="new-password"></div>`;
+  modal(L('نسيت كلمة المرور', 'Forgot password'), tabs + body,
+    FP.tab === 'link' ? `<button class="btn gold" onclick="liveSendLink()">${L('إرسال الرابط', 'Send link')}</button>` : FP.tab === 'req' ? `<button class="btn gold" onclick="liveSendReset()">${L('إرسال الطلب للإدارة', 'Send request to admin')}</button>` : `<button class="btn gold" onclick="liveUseResetCode()">${L('تغيير كلمة المرور', 'Change password')}</button>`);
+}
+async function liveSendLink() {
+  const email = val('fp_e'); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast(L('اكتب البريد الإلكتروني صح', 'Enter a valid email'), 'bad');
+  const { error } = await LIVE.sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + (APP.portal === 'student' ? '' : '#' + APP.portal) });
+  if (error && !/rate|limit/i.test(error.message)) return toast(liveErr(error.message), 'bad');
+  closeModal(); toast(error ? liveErr(error.message) : L('لو البريد مسجّل، هيوصله رابط تغيير كلمة المرور خلال دقايق', 'If the email is registered, a reset link will arrive in a few minutes'), error ? 'bad' : 'ok');
 }
 async function liveSendReset() {
-  const email = val('fp_e'); if (!email) return; const { error } = await LIVE.sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + (APP.portal === 'student' ? '' : '#' + APP.portal) });
-  closeModal(); toast(error ? liveErr(error.message) : L('لو البريد مسجّل هيوصلك رابط تغيير كلمة المرور', 'If registered, you’ll receive a reset link'), error ? 'bad' : 'ok');
+  const email = val('fp_e'); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast(L('اكتب البريد الإلكتروني صح', 'Enter a valid email'), 'bad');
+  const { error } = await LIVE.sb.rpc('request_password_reset', { p_email: email, p_note: val('fp_n') });
+  if (error) return toast(liveErr(error.message), 'bad');
+  FP.tab = 'code'; liveForgot();
+  toast(L('تم إرسال طلبك للإدارة – أول ما يتأكدوا هيبعتولك الكود', 'Request sent – the admin will send you a code once verified'), 'ok');
+}
+async function liveUseResetCode() {
+  const email = val('fp_e'), code = val('fp_c'), p = val('fp_p'), p2 = val('fp_p2');
+  if (!email || !code) return toast(L('اكتب البريد والكود', 'Enter email and code'), 'bad');
+  const bad = pwProblem(p); if (bad) return toast(bad, 'bad'); if (p !== p2) return toast(L('كلمتين المرور مش متطابقين', 'Passwords do not match'), 'bad');
+  const { data, error } = await LIVE.sb.rpc('complete_password_reset', { p_email: email, p_code: code, p_password: p });
+  if (error) return toast(liveErr(error.message), 'bad');
+  const msg = { OK: '', BAD_CODE: L('الكود غلط', 'Wrong code'), EXPIRED: L('الكود انتهت صلاحيته – اطلب كود جديد', 'The code expired – request a new one'), LOCKED: L('محاولات غلط كتير – الطلب اتقفل، اطلب استعادة جديدة', 'Too many wrong tries – request a new reset'), WEAK_PASSWORD: L('كلمة المرور ضعيفة – 8 أحرف على الأقل وفيها حروف وأرقام', 'Weak password – 8+ characters with letters and numbers') }[data] ?? L('حصل خطأ', 'Error');
+  if (data !== 'OK') return toast(msg, 'bad');
+  closeModal(); FP.tab = 'req'; AUTH.form.l_email = email; AUTH.err = ''; render();
+  modal(L('تم تغيير كلمة المرور ✓', 'Password changed ✓'), `<p style="margin-top:0">${L('سجّل دخول دلوقتي بكلمة المرور الجديدة. أي جهاز تاني كان داخل على حسابك اتعمله خروج.', 'Log in now with your new password. Any other device signed in to your account was signed out.')}</p>`, `<button class="btn" onclick="closeModal()">${L('تمام', 'OK')}</button>`);
 }
 function liveNewPasswordModal() {
-  modal(L('اختار كلمة مرور جديدة', 'Choose a new password'), `<div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="np_p" dir="ltr"></div>`,
+  modal(L('اختار كلمة مرور جديدة', 'Choose a new password'), `<div class="field"><label>${L('كلمة المرور الجديدة', 'New password')}</label><input class="input" type="password" id="np_p" dir="ltr" autocomplete="new-password"></div>`,
     `<button class="btn gold" onclick="liveSetPassword()">${L('حفظ', 'Save')}</button>`);
 }
 async function liveSetPassword() {
-  const p = val('np_p'); if (p.length < 6) return toast(L('6 أحرف على الأقل', '6+ characters'), 'bad');
+  const p = val('np_p'); const bad = pwProblem(p); if (bad) return toast(bad, 'bad');
+  if (!(await liveMfaPass(L('أكّد إنك صاحب الحساب', 'Confirm it’s you'), () => liveSetPassword(), { keep: { np_p: p } }))) return;
   const { error } = await LIVE.sb.auth.updateUser({ password: p }); if (error) return toast(liveErr(error.message), 'bad');
   closeModal(); toast(L('تم تغيير كلمة المرور ✓', 'Password changed ✓'), 'ok'); await afterSignIn();
 }
+
+/* ---------- الرئيس التنفيذي: مراجعة طلبات الاستعادة ---------- */
+async function liveApproveReset(id) {
+  const r = (D.resets || []).find(x => x.id === id); if (!r) return;
+  const { data, error } = await LIVE.sb.rpc('approve_password_reset', { p_id: id, p_send_email: !!$('#rs_mail')?.checked });
+  if (error) return toast(liveErr(error.message), 'bad');
+  const code = data.code; const ph = String(data.phone || '').replace(/\D/g, ''); const intl = ph.startsWith('00') ? ph.slice(2) : ph.startsWith('0') ? (ph.length === 11 ? '2' + ph : '966' + ph.slice(1)) : ph;
+  const msg = L(`مرحباً ${data.name || ''}،\nكود تغيير كلمة المرور في NEXIUM FUTURA ACADEMY: ${code}\nالكود صالح 30 دقيقة ولمرة واحدة. افتح الموقع ← نسيت كلمة المرور ← "معايا كود".`, `Hello ${data.name || ''},\nYour NEXIUM FUTURA ACADEMY password code: ${code}\nValid for 30 minutes, one use. Open the site → Forgot password → "I have a code".`);
+  closeModal();
+  modal(L('الكود جاهز – ابعته لصاحب الحساب', 'Code ready – send it to the account owner'), `<div style="text-align:center"><div class="code-big num">${esc(code)}</div><div class="small muted">${L('صالح لمدة 30 دقيقة ولمرة واحدة · مش هيظهر تاني', 'Valid 30 minutes, one use · will not be shown again')}</div></div>
+    <div class="kv" style="margin:14px 0"><dt>${L('الاسم', 'Name')}</dt><dd>${esc(data.name || '—')}</dd><dt>${L('البريد', 'Email')}</dt><dd dir="ltr">${esc(data.email)}</dd><dt>${L('الموبايل المسجّل', 'Registered mobile')}</dt><dd dir="ltr">${esc(data.phone || '—')}</dd></div>
+    <div class="notice warn">${icon('shield')} ${L('ابعت الكود على الرقم أو الإيميل المسجّلين بس – مش على أي رقم تاني حد يطلبه منك.', 'Send the code only to the registered number or email – never to another number someone gives you.')}</div>`,
+    `<button class="btn ghost" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(msg))}).then(()=>toast(L('تم النسخ','Copied'),'ok'))">${L('نسخ الرسالة', 'Copy message')}</button>${intl.length >= 9 ? `<a class="btn gold" href="https://wa.me/${intl}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${bicon('whatsapp', 16)} ${L('إرسال واتساب للرقم المسجّل', 'WhatsApp the registered number')}</a>` : ''}`);
+  await liveLoad(); render();
+}
+async function liveRejectReset(id) { const { error } = await LIVE.sb.rpc('reject_password_reset', { p_id: id }); if (error) return toast(liveErr(error.message), 'bad'); await liveLoad(); render(); toast(L('تم رفض الطلب', 'Request rejected')); }
+
+/* ---------- تفعيل حساب مدرس / إدارة: البريد + كود التفعيل ---------- */
 function liveActivate() {
   const who = APP.portal === 'teacher' ? L('المدرس', 'teacher') : L('الإدارة', 'admin');
-  modal(L('تفعيل الحساب لأول مرة', 'First-time activation'), `<p class="muted" style="margin-top:0">${L('استخدم نفس البريد اللي الإدارة سجّلته لك كـ', 'Use the same email the admin registered for you as')} ${who}.</p>
-    <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="ac_e" dir="ltr"></div><div class="field"><label>${L('اختار كلمة مرور', 'Choose a password')}</label><input class="input" type="password" id="ac_p" dir="ltr"></div>`,
+  modal(L('تفعيل الحساب لأول مرة', 'First-time activation'), `<p class="muted" style="margin-top:0">${L('استخدم نفس البريد اللي الإدارة سجّلته لك كـ', 'Use the same email the admin registered for you as')} ${who}، ${L('وكود التفعيل اللي وصلك من الإدارة.', 'and the activation code you received from the admin.')}</p>
+    <div class="field"><label>${L('البريد الإلكتروني', 'Email')}</label><input class="input" id="ac_e" dir="ltr" type="email"></div>
+    <div class="field"><label>${L('كود التفعيل', 'Activation code')}</label><input class="input num" id="ac_c" dir="ltr" placeholder="XXXX-XXXX-XXXX" style="letter-spacing:2px;text-transform:uppercase"></div>
+    <div class="field"><label>${L('اختار كلمة مرور', 'Choose a password')}</label><input class="input" type="password" id="ac_p" dir="ltr" autocomplete="new-password" placeholder="${L('8 أحرف على الأقل – حروف وأرقام', '8+ characters – letters and numbers')}"></div>`,
     `<button class="btn gold" onclick="liveDoActivate()">${L('تفعيل', 'Activate')}</button>`);
 }
 async function liveDoActivate() {
-  const email = val('ac_e'), password = val('ac_p'); if (!email || password.length < 6) return toast(L('اكتب البريد وكلمة مرور 6 أحرف على الأقل', 'Enter email and a 6+ character password'), 'bad');
-  const { data: role } = await LIVE.sb.rpc('check_invite', { p_email: email });
+  const email = val('ac_e'), code = val('ac_c').toUpperCase(), password = val('ac_p');
+  if (!email || !code) return toast(L('اكتب البريد وكود التفعيل', 'Enter email and activation code'), 'bad');
+  const bad = pwProblem(password); if (bad) return toast(bad, 'bad');
+  const { data: role } = await LIVE.sb.rpc('check_invite', { p_email: email, p_code: code });
   const okRole = APP.portal === 'teacher' ? role === 'teacher' : ['supervisor', 'principal', 'ceo'].includes(role);
-  if (!okRole) return toast(L('البريد ده مش مسجّل عندنا – تواصل مع الإدارة', 'This email is not registered – contact the admin'), 'bad');
-  const { data, error } = await LIVE.sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname + '#' + APP.portal } });
+  if (!okRole) return toast(L('البريد أو كود التفعيل غلط – تواصل مع الإدارة', 'Wrong email or activation code – contact the admin'), 'bad');
+  const { data, error } = await LIVE.sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname + '#' + APP.portal, data: { invite_code: code } } });
   if (error) return toast(liveErr(error.message), 'bad');
   closeModal(); if (data.session) return afterSignIn();
   modal(L('افتح بريدك الإلكتروني 📩', 'Check your email 📩'), `<p>${L('بعتنا رسالة تأكيد على', 'We sent a confirmation link to')} <b class="num">${esc(email)}</b>. ${L('اضغط على الرابط وبعدين سجّل دخول.', 'Click it, then log in.')}</p>`);
+}
+async function liveInviteCode(ref, phone, name) {
+  const { data, error } = await LIVE.sb.rpc('invite_code', { p_ref: ref }); if (error) return toast(liveErr(error.message), 'bad');
+  const ph = String(phone || '').replace(/\D/g, ''); const intl = ph.startsWith('00') ? ph.slice(2) : ph.startsWith('0') ? (ph.length === 11 ? '2' + ph : '966' + ph.slice(1)) : ph;
+  const msg = L(`مرحباً ${name || ''}،\nكود تفعيل حسابك في NEXIUM FUTURA ACADEMY: ${data}\nافتح ${location.origin + location.pathname}#${APP.view === 'staff' ? 'admin' : 'teacher'} واضغط "تفعيل الحساب لأول مرة".`, `Hello ${name || ''},\nYour NEXIUM FUTURA ACADEMY activation code: ${data}\nOpen ${location.origin + location.pathname}#${APP.view === 'staff' ? 'admin' : 'teacher'} and click "First-time activation".`);
+  modal(L('كود التفعيل', 'Activation code'), `<div style="text-align:center"><div class="code-big num">${esc(data)}</div><div class="small muted">${L('أي كود قديم اتلغى. ابعت الكود ده للشخص نفسه بس.', 'Any older code is now invalid. Send this only to the person themselves.')}</div></div>`,
+    `<button class="btn ghost" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(msg))}).then(()=>toast(L('تم النسخ','Copied'),'ok'))">${L('نسخ الرسالة', 'Copy message')}</button>${intl.length >= 9 ? `<a class="btn gold" href="https://wa.me/${intl}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${bicon('whatsapp', 16)} ${L('إرسال واتساب', 'Send on WhatsApp')}</a>` : ''}`);
+}
+/* ---------- التحقق بخطوتين (حسابات الإدارة) ----------
+   بعد ما الحساب يفعّله، قاعدة البيانات نفسها مش بتدي أي صلاحية إدارة لحد ما يتكتب الكود */
+async function liveMfaState() {
+  const [{ data: aal }, { data: f }] = await Promise.all([LIVE.sb.auth.mfa.getAuthenticatorAssuranceLevel(), LIVE.sb.auth.mfa.listFactors()]);
+  return { aal: aal || {}, factor: (f?.totp || []).find(x => x.status === 'verified') || null, all: f?.all || [] };
+}
+// بترجع true لو الجلسة مش محتاجة كود أو اتأكدت. غير كده بتفتح خانة الكود وبتكمّل بـ next بعد التأكيد
+async function liveMfaPass(title, next, opts = {}) {
+  let st; try { st = await liveMfaState(); } catch (e) { console.warn(e); return true; }
+  if (!(st.aal.nextLevel === 'aal2' && st.aal.currentLevel !== 'aal2') || !st.factor) return true;
+  window.__mfaNext = next; window.__mfaKeep = opts.keep || null;
+  modal(esc(title), `<div style="text-align:center"><div style="font-size:42px">🔐</div><p style="margin-top:4px">${L('افتح تطبيق المصادقة (Google Authenticator أو Microsoft Authenticator) واكتب الكود المكوّن من 6 أرقام.', 'Open your authenticator app and enter the 6-digit code.')}</p></div>
+    <input class="input num code-in" id="mfa_c" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" onkeydown="if(event.key==='Enter')liveMfaVerify('${st.factor.id}')">`,
+    `<button class="btn ghost" onclick="closeModal();logout()">${L('خروج', 'Log out')}</button><button class="btn gold" onclick="liveMfaVerify('${st.factor.id}')">${L('تأكيد', 'Verify')}</button>`);
+  setTimeout(() => $('#mfa_c')?.focus(), 60); return false;
+}
+async function liveMfaVerify(factorId) {
+  const code = val('mfa_c').replace(/\D/g, ''); if (code.length !== 6) return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad');
+  const { error } = await LIVE.sb.auth.mfa.challengeAndVerify({ factorId, code });
+  if (error) { toast(L('الكود غلط أو انتهى – جرّب الكود الجديد', 'Wrong or expired code – try the new one'), 'bad'); const i = $('#mfa_c'); if (i) { i.value = ''; i.focus(); } return; }
+  closeModal(); const keep = window.__mfaKeep; const n = window.__mfaNext; window.__mfaNext = null;
+  if (keep) { liveNewPasswordModal(); Object.entries(keep).forEach(([k, v]) => { const e = document.getElementById(k); if (e) e.value = v; }); }
+  if (n) n();
+}
+async function liveMfaEnroll() {
+  try {
+    const st = await liveMfaState();
+    for (const f of st.all.filter(x => x.status !== 'verified')) await LIVE.sb.auth.mfa.unenroll({ factorId: f.id });
+    const { data, error } = await LIVE.sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'NEXIUM ' + new Date().toISOString().slice(0, 16), issuer: 'NEXIUM FUTURA ACADEMY' });
+    if (error) return toast(liveErr(error.message), 'bad');
+    const qr = String(data.totp.qr_code || ''); const qrOk = /^data:image\/svg\+xml/.test(qr);
+    modal(L('تفعيل التحقق بخطوتين', 'Turn on 2-step verification'), `<ol class="small" style="padding-inline-start:18px;line-height:1.9;margin-top:0"><li>${L('نزّل تطبيق Google Authenticator أو Microsoft Authenticator على موبايلك.', 'Install Google Authenticator or Microsoft Authenticator on your phone.')}</li><li>${L('من التطبيق اختار "مسح رمز QR" وامسح الصورة دي.', 'In the app choose “Scan a QR code” and scan this.')}</li><li>${L('اكتب الكود المكوّن من 6 أرقام اللي ظهر في التطبيق.', 'Type the 6-digit code shown in the app.')}</li></ol>
+      <div style="text-align:center">${qrOk ? `<img src="${esc(qr)}" alt="QR" style="width:200px;height:200px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px">` : ''}<div class="tiny muted" style="margin-top:6px">${L('أو اكتب المفتاح ده يدوياً:', 'Or enter this key manually:')}</div><div class="num" dir="ltr" style="font-weight:700;letter-spacing:1px;word-break:break-all">${esc(data.totp.secret)}</div></div>
+      <input class="input num code-in" id="mfa_c" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="margin-top:12px" onkeydown="if(event.key==='Enter')liveMfaConfirm('${esc(data.id)}')">`,
+      `<button class="btn ghost" onclick="closeModal()">${L('إلغاء', 'Cancel')}</button><button class="btn gold" onclick="liveMfaConfirm('${esc(data.id)}')">${L('تفعيل', 'Turn on')}</button>`);
+  } catch (e) { console.error(e); toast(L('تعذّر بدء التفعيل', 'Could not start'), 'bad'); }
+}
+async function liveMfaConfirm(factorId) {
+  const code = val('mfa_c').replace(/\D/g, ''); if (code.length !== 6) return toast(L('الكود 6 أرقام', 'The code is 6 digits'), 'bad');
+  const { error } = await LIVE.sb.auth.mfa.challengeAndVerify({ factorId, code }); if (error) return toast(L('الكود غلط – تأكد من وقت الموبايل وجرّب الكود الجديد', 'Wrong code – check your phone’s time and try the new code'), 'bad');
+  closeModal(); LIVE.mfa = null; await liveLoad(); render(); toast(L('تم تفعيل التحقق بخطوتين ✓ حسابك بقى أأمن بكتير', '2-step verification is on ✓'), 'ok');
+}
+async function liveMfaRemove(factorId) {
+  confirmBox(L('إيقاف التحقق بخطوتين؟ حسابك هيبقى محمي بكلمة المرور بس.', 'Turn off 2-step verification? Your account will rely on the password only.'), async () => {
+    const { error } = await LIVE.sb.auth.mfa.unenroll({ factorId }); if (error) return toast(liveErr(error.message), 'bad');
+    LIVE.mfa = null; await LIVE.sb.auth.refreshSession(); await liveLoad(); render(); toast(L('تم الإيقاف', 'Turned off'));
+  }, L('إيقاف', 'Turn off'));
 }
 function liveCompleteProfile() {
   const u = currentUser(); if (!u) return;

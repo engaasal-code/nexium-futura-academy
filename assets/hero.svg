@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="NEXIUM online class">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#122F7A"/><stop offset="1" stop-color="#06173F"/></linearGradient>
+    <linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9BC45"/><stop offset="1" stop-color="#D4A12A"/></linearGradient>
+    <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8EDF8"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <g opacity=".08" fill="#fff"><circle cx="1080" cy="120" r="160"/><circle cx="120" cy="820" r="220"/></g>
+  <g stroke="#fff" stroke-opacity=".07" stroke-width="2" fill="none"><path d="M0 700 Q300 600 600 680 T1200 640"/><path d="M0 760 Q300 660 600 740 T1200 700"/></g>
+  <!-- desk -->
+  <rect x="120" y="700" width="960" height="26" rx="13" fill="#0B2463"/>
+  <!-- laptop -->
+  <g>
+    <rect x="300" y="250" width="600" height="400" rx="26" fill="#0B2463" stroke="#E9BC45" stroke-width="6"/>
+    <rect x="326" y="276" width="548" height="348" rx="12" fill="url(#scr)"/>
+    <path d="M240 650 H960 L920 700 H280 Z" fill="#D9DFEC"/><rect x="540" y="652" width="120" height="10" rx="5" fill="#B9C2D6"/>
+    <!-- video tiles -->
+    <rect x="346" y="296" width="330" height="236" rx="14" fill="#122F7A"/>
+    <circle cx="511" cy="384" r="44" fill="#E9BC45"/><path d="M431 512 q80 -86 160 0" fill="#E9BC45"/>
+    <rect x="690" y="296" width="164" height="112" rx="12" fill="#1F3F8F"/><circle cx="772" cy="338" r="22" fill="#FBF3DE"/><path d="M732 402 q40 -44 80 0" fill="#FBF3DE"/>
+    <rect x="690" y="420" width="164" height="112" rx="12" fill="#A67812"/><circle cx="772" cy="462" r="22" fill="#FBF3DE"/><path d="M732 526 q40 -44 80 0" fill="#FBF3DE"/>
+    <rect x="346" y="548" width="508" height="58" rx="12" fill="#E3E7F0"/>
+    <circle cx="560" cy="577" r="16" fill="#D64545"/><circle cx="604" cy="577" r="16" fill="#0B2463"/><circle cx="648" cy="577" r="16" fill="#1F9D6B"/>
+  </g>
+  <!-- books -->
+  <g transform="translate(860 560)"><rect width="190" height="40" rx="8" fill="#E9BC45"/><rect y="-44" x="14" width="170" height="40" rx="8" fill="#FBF3DE"/><rect y="-88" x="4" width="180" height="40" rx="8" fill="#1F9D6B"/><rect x="20" y="12" width="110" height="6" rx="3" fill="#0B2463" opacity=".4"/></g>
+  <!-- grad cap -->
+  <g transform="translate(160 330) rotate(-12)"><path d="M0 60 L110 10 L220 60 L110 110 Z" fill="url(#gd)"/><path d="M50 82 v52 c0 20 120 20 120 0 v-52 L110 110 Z" fill="#D4A12A"/><path d="M200 70 v70" stroke="#FBF3DE" stroke-width="6"/><circle cx="200" cy="146" r="10" fill="#FBF3DE"/></g>
+  <!-- floating badges -->
+  <g transform="translate(860 170)"><rect width="220" height="88" rx="20" fill="#fff"/><circle cx="46" cy="44" r="24" fill="#1F9D6B"/><path d="M34 45 l9 9 l17 -19" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="84" y="28" width="110" height="12" rx="6" fill="#0B2463"/><rect x="84" y="50" width="76" height="10" rx="5" fill="#B9C2D6"/></g>
+  <g transform="translate(120 520)"><rect width="200" height="80" rx="20" fill="#fff"/><text x="22" y="54" font-family="Arial" font-size="34" fill="#E9BC45">★★★★★</text></g>
+  <g fill="#E9BC45"><circle cx="1000" cy="420" r="10"/><circle cx="240" cy="200" r="7"/><circle cx="1040" cy="640" r="6"/></g>
+</svg>

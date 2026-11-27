@@ -102,7 +102,7 @@ const PERM_GROUPS = [
     ['fin.methods', 'التحكم في طرق الدفع', 'Manage payment methods'], ['fin.withdraw', 'تسجيل انسحاب طالب', 'Record withdrawal']] },
   { ar: 'المحتوى', en: 'Content', items: [
     ['cnt.subjects', 'إظهار / إخفاء المواد', 'Show / hide subjects'], ['cnt.summer', 'إدارة كورسات الصيف', 'Manage summer courses'],
-    ['cnt.pages', 'إدارة الصفحات التعريفية ونشرها', 'Manage & publish site pages'], ['cnt.social', 'تعديل روابط السوشيال وبيانات التواصل', 'Edit social links & contact info']] },
+    ['cnt.pages', 'إدارة الصفحات التعريفية ونشرها', 'Manage & publish site pages'], ['cnt.home', 'تعديل واجهة الموقع (الصور والنصوص)', 'Edit the homepage (images & text)'], ['cnt.social', 'تعديل روابط السوشيال وبيانات التواصل', 'Edit social links & contact info']] },
   { ar: 'التواصل', en: 'Communication', items: [
     ['com.chat', 'المحادثة مع أولياء الأمور', 'Chat with parents'], ['com.monitor', 'مراقبة كل المحادثات', 'Monitor all chats'], ['com.emails', 'عرض سجل الإيميلات', 'View email log']] },
   { ar: 'النظام', en: 'System', items: [
@@ -139,13 +139,14 @@ function seed() {
   const teachers = [
     { id: 't1', name: 'أ. منى عبد الرحمن', nameEn: 'Ms. Mona Abdelrahman', email: 'mona@nexium.academy', phone: '0100000001', color: TC[0], bio: 'مدرسة لغة إنجليزية ومنهج كونكت – خبرة 9 سنوات مع رياض الأطفال والابتدائي.', bioEn: 'English & Connect teacher – 9 years with KG and primary.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345001', subjects: [{ id: 'kg_en', rate: 22 }, { id: 'kg_connect', rate: 22 }, { id: 'pri_en', rate: 26 }, { id: 'pri_connect', rate: 25 }, { id: 'pri_connectp', rate: 27 }, { id: 'summer_s_conv', rate: 28 }], active: true, camera: true, badge: 'top' },
     { id: 't2', name: 'أ. أحمد سمير', nameEn: 'Mr. Ahmed Samir', email: 'ahmed.s@nexium.academy', phone: '0100000002', color: TC[1], bio: 'مدرس رياضيات للمرحلتين الإعدادية والثانوية ومدرب أولمبياد.', bioEn: 'Math teacher for prep & secondary, Olympiad coach.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345002', subjects: [{ id: 'prep_math', rate: 32 }, { id: 'sec_math', rate: 40 }, { id: 'pri_math', rate: 26 }, { id: 'summer_s_olymp', rate: 35 }], active: true, camera: true },
-    { id: 't3', name: 'أ. فاطمة الزهراء', nameEn: 'Ms. Fatma Elzahraa', email: 'fatma@nexium.academy', phone: '0100000003', color: TC[2], bio: 'مدرسة لغة عربية وتربية دينية وتحفيظ قرآن بالتجويد.', bioEn: 'Arabic, religious studies and Quran with Tajweed.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345003', subjects: [{ id: 'kg_ar', rate: 20 }, { id: 'pri_ar', rate: 24 }, { id: 'prep_ar', rate: 20 }, { id: 'pri_rel', rate: 22 }, { id: 'summer_s_quran', rate: 25 }, { id: 'summer_s_callig', rate: 25 }], active: true, camera: true, badge: 'rising' },
+    { id: 't3', name: 'أ. فاطمة الزهراء', nameEn: 'Ms. Fatma Elzahraa', email: 'fatma@nexium.academy', phone: '0100000003', color: TC[2], bio: 'مدرسة لغة عربية وتربية دينية وتحفيظ قرآن بالتجويد.', bioEn: 'Arabic, religious studies and Quran with Tajweed.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345003', subjects: [{ id: 'kg_ar', rate: 20 }, { id: 'pri_ar', rate: 24 }, { id: 'prep_ar', rate: 20 }, { id: 'pri_rel', rate: 22 }, { id: 'summer_s_quran', rate: 25 }, { id: 'summer_s_callig', rate: 25 }], active: true, camera: true, badge: 'rising', baseRating: 4.8, baseCount: 10 },
     { id: 't4', name: 'د. كريم حسن', nameEn: 'Dr. Karim Hassan', email: 'karim@nexium.academy', phone: '0100000004', color: TC[3], bio: 'دكتوراه في الفيزياء – يدرّس الفيزياء والكيمياء والعلوم.', bioEn: 'PhD Physics – teaches physics, chemistry and science.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345004', subjects: [{ id: 'sec_phy', rate: 42 }, { id: 'sec_chem', rate: 42 }, { id: 'prep_sci', rate: 22 }, { id: 'pri_sci', rate: 26 }], active: true, camera: false },
     { id: 't5', name: 'أ. سارة يوسف', nameEn: 'Ms. Sara Youssef', email: 'sara@nexium.academy', phone: '0100000005', color: TC[4], bio: 'مدرسة لغة إنجليزية للثانوي ومدربة IELTS معتمدة.', bioEn: 'Secondary English teacher, certified IELTS trainer.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345005', subjects: [{ id: 'prep_en', rate: 30 }, { id: 'sec_en', rate: 38 }, { id: 'summer_s_ielts', rate: 40 }, { id: 'summer_s_conv', rate: 28 }], active: true, camera: true },
-    { id: 't6', name: 'أ. عمر خالد', nameEn: 'Mr. Omar Khaled', email: 'omar@nexium.academy', phone: '0100000006', color: TC[5], bio: 'مهندس برمجيات ومدرس تكنولوجيا معلومات وبرمجة للأطفال.', bioEn: 'Software engineer teaching ICT and kids coding.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345006', subjects: [{ id: 'pri_ict', rate: 24 }, { id: 'prep_cs', rate: 30 }, { id: 'sec_ict', rate: 34 }, { id: 'summer_s_code', rate: 30 }], active: true, camera: true },
+    { id: 't6', name: 'أ. عمر خالد', nameEn: 'Mr. Omar Khaled', email: 'omar@nexium.academy', phone: '0100000006', color: TC[5], bio: 'مهندس برمجيات ومدرس تكنولوجيا معلومات وبرمجة للأطفال.', bioEn: 'Software engineer teaching ICT and kids coding.', youtube: 'https://youtu.be/dQw4w9WgXcQ', zoom: 'https://zoom.us/j/8812345006', subjects: [{ id: 'pri_ict', rate: 24 }, { id: 'prep_cs', rate: 30 }, { id: 'sec_ict', rate: 34 }, { id: 'summer_s_code', rate: 30 }], active: true, camera: true, baseRating: 4.6, baseCount: 5 },
   ];
   const students = [
     { id: 's1', name: 'يوسف أحمد', parent: 'أحمد محمود', email: 'parent.youssef@gmail.com', phone: '0551234567', country: 'SA', stage: 'pri', grade: 'G4', pass: '123456', confirmed: true, provider: 'email', active: true, joined: atDay(-70, 10), withdrawn: false },
+    { id: 's9', name: 'سارة أحمد', parent: 'أحمد محمود', email: 'parent.youssef@gmail.com', phone: '0551234567', country: 'SA', stage: 'pri', grade: 'G2', pass: '123456', confirmed: true, provider: 'email', active: true, joined: atDay(-30, 10), withdrawn: false },
     { id: 's2', name: 'ليان خالد', parent: 'خالد العتيبي', email: 'layan.parent@gmail.com', phone: '0559876543', country: 'SA', stage: 'sec', grade: 'G11', pass: '123456', confirmed: true, provider: 'google', active: true, joined: atDay(-55, 10) },
     { id: 's3', name: 'مريم حسام', parent: 'حسام فؤاد', email: 'hossam.f@yahoo.com', phone: '01012345678', country: 'EG', stage: 'prep', grade: 'G8', pass: '123456', confirmed: true, provider: 'yahoo', active: true, joined: atDay(-40, 10) },
     { id: 's4', name: 'عبدالله سعيد', parent: 'سعيد الكندي', email: 'saeed.k@outlook.com', phone: '96891234567', country: 'OM', stage: 'kg', grade: 'KG2', pass: '123456', confirmed: true, provider: 'email', active: true, joined: atDay(-35, 10) },
@@ -161,7 +162,7 @@ function seed() {
   ];
   const DB = { v: 1, subjects, teachers, students, staff, sessions: [], enrollments: [], homework: [], evals: [], certs: [], ratings: [], messages: [], emails: [], payouts: [], expenses: [], withdrawals: [],
     perms: defaultPerms(), countries: COUNTRIES_SEED.map(c => ({ ...c })),
-    settings: { displayCur: 'auto', reportCur: 'SAR', sessionMin: 60, reminderMin: 10, academyPhone: WA_DISPLAY },
+    settings: { displayCur: 'auto', reportCur: 'SAR', sessionMin: 60, reminderMin: 10, academyPhone: WA_DISPLAY, packageDays: 60 },
     methods: [
       { id: 'bank', ar: 'تحويل بنكي', en: 'Bank transfer', on: true, details: 'البنك الأهلي – IBAN: SA00 0000 0000 0000 0000 0000 – باسم NEXIUM FUTURA ACADEMY' },
       { id: 'vf', ar: 'فودافون كاش', en: 'Vodafone Cash', on: true, details: 'حوّل على الرقم 01001074715 ثم ارفع صورة الإيصال' },
@@ -169,7 +170,7 @@ function seed() {
     ],
     social: { facebook: 'https://facebook.com/nexiumfutura', instagram: 'https://instagram.com/nexiumfutura', x: 'https://x.com/nexiumfutura', tiktok: 'https://tiktok.com/@nexiumfutura', youtube: 'https://youtube.com/@nexiumfutura', linkedin: 'https://linkedin.com/company/nexiumfutura', email: 'info@nexium.academy', phone: '01001074715', whatsapp: '01001074715' },
     footerAbout: { ar: 'NEXIUM FUTURA ACADEMY منصة تعليمية أونلاين لكل المراحل الدراسية من KG حتى الثانوية، بمدرسين متخصصين وحصص مباشرة ومتابعة كاملة لولي الأمر.', en: 'NEXIUM FUTURA ACADEMY is an online learning platform for every stage from KG to secondary, with specialist teachers, live sessions and full parent follow-up.' },
-    pages: seedPages(),
+    pages: seedPages(), home: {},
     withdrawReasons: ['السعر مرتفع', 'ظروف سفر', 'عدم التوافق مع المدرس', 'ضغط الدراسة في المدرسة', 'انتقل لمنصة أخرى', 'أسباب أخرى'],
   };
   const S = DB.sessions, E = DB.enrollments;
@@ -200,6 +201,8 @@ function seed() {
   mk('t1', 'pri_en', 3, 17, 's1', 'booked', { e: e1.id });
   mk('t2', 'pri_math', 2, 18, 's1', 'booked', { e: e2.id });
   mk('t2', 'pri_math', -4, 18, 's1', 'cancelled', { e: e2.id });
+  // Sara (s9) – Youssef's sister, same parent account: Arabic package close to its end
+  const e9b = enroll('s9', 'pri_ar', 8, 'paid', 52); [-30, -26, -22, -18, -12, -6].forEach((d, i) => mk('t3', 'pri_ar', d, 16, 's9', i === 2 ? 'absent' : 'done', { e: e9b.id, recording: i > 3 ? 'https://zoom.us/rec/share/demo-sara' + i : '' })); mk('t3', 'pri_ar', 2, 16, 's9', 'booked', { e: e9b.id });
   // Layan (s2) sec math & physics
   const e3 = enroll('s2', 'sec_math', 24, 'paid', 50); const e4 = enroll('s2', 'sec_phy', 8, 'pending', 2, 1, 'insta');
   [-30, -25, -20, -15, -10, -6, -3].forEach((d, i) => mk('t2', 'sec_math', d, 20, 's2', i === 3 ? 'absent' : 'done', { e: e3.id }));
@@ -290,7 +293,7 @@ function queueReminder(D, s) {
 
 /* ---------- persistence ---------- */
 let D;
-function load() { try { const raw = localStorage.getItem(STORE_KEY); if (raw) { D = JSON.parse(raw); return; } } catch (e) {} D = seed(); save(); }
+function load() { try { const raw = localStorage.getItem(STORE_KEY); if (raw) { D = JSON.parse(raw); const dp = defaultPerms(); Object.keys(dp).forEach(r => { D.perms[r] = Object.assign({}, dp[r], D.perms[r] || {}); }); return; } } catch (e) {} D = seed(); save(); }
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(D)); } catch (e) {} }
 function resetDemo() { D = seed(); save(); }
 function refreshEmailStatus() { const now = Date.now(); D.emails.forEach(e => { if (e.status === 'scheduled' && new Date(e.at).getTime() <= now) e.status = 'sent'; }); }
@@ -302,8 +305,10 @@ const stuById = id => D.students.find(s => s.id === id);
 const tName = t => t ? (LANG === 'ar' ? t.name : (t.nameEn || t.name)) : '—';
 const initials = n => String(n || '?').replace(/^(أ\.|د\.|م\.|Mr\.|Ms\.|Dr\.)\s*/, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('');
 const countryBy = code => D.countries.find(c => c.code === code) || D.countries[0];
-const avgRating = tid => { const r = D.ratings.filter(x => x.teacherId === tid); return r.length ? r.reduce((a, b) => a + b.stars, 0) / r.length : 0; };
-const stars = (v, n = 5) => { let h = ''; for (let i = 1; i <= n; i++) h += i <= Math.round(v) ? '★' : '<span class="off">★</span>'; return `<span class="stars">${h}</span>`; };
+// التقييم = تقييمات أولياء الأمور + التقييم المبدئي اللي حدده الرئيس التنفيذي (كأنه عدد تقييمات بوزن معيّن)
+const ratingOf = tid => { const t = tchById(tid); const r = D.ratings.filter(x => x.teacherId === tid); const avg = r.length ? r.reduce((a, b) => a + b.stars, 0) / r.length : 0; return combinedRating(avg, r.length, t?.baseRating, t?.baseCount); };
+const avgRating = tid => ratingOf(tid).v;
+const stars = (v, n = 5) => { let h = ''; const r = Math.round((+v || 0) * 2) / 2; for (let i = 1; i <= n; i++) h += i <= r ? '★' : i - 0.5 === r ? '<span class="half">★</span>' : '<span class="off">★</span>'; return `<span class="stars" title="${(+v || 0).toFixed(1)}">${h}</span>`; };
 
 /* ---------- pricing ---------- */
 let VISITOR_COUNTRY = guessCountry();
@@ -325,6 +330,8 @@ function pkgPrice(subject, pkg, country) { const p = ppsFor(subject, country); c
 // accounting: convert any currency amount to report currency
 function toSAR(amount, cur) { if (cur === 'SAR') return amount; const c = D.countries.find(x => x.cur === cur); return c ? amount / c.rate : amount; }
 function fromSAR(v, cur) { if (cur === 'SAR') return v; const c = D.countries.find(x => x.cur === cur); return c ? v * c.rate : v; }
+// التحكم في ظهور الأسعار: where = 'home' (الصفحة الرئيسية للزوار) أو 'students' (صفحات الطالب)
+const pricesOn = where => !(D.settings && D.settings.showPrices && D.settings.showPrices[where] === false);
 const repC = () => countryBy(D.settings.reportCur === 'EGP' ? 'EG' : 'SA');
 const rep = vSAR => money(fromSAR(vSAR, repC().cur), repC());
 
@@ -351,7 +358,19 @@ function enrollUsage(e) {
   return { done: ss.filter(s => s.status === 'done').length, absent: ss.filter(s => s.status === 'absent').length, booked: ss.filter(s => s.status === 'booked').length, cancelled: ss.filter(s => s.status === 'cancelled').length, remaining: Math.max(0, e.sessions - used), used };
 }
 function activeEnrollment(studentId, subjectId) {
-  return D.enrollments.filter(e => e.studentId === studentId && e.subjectId === subjectId && ['paid', 'partial'].includes(e.status)).find(e => enrollUsage(e).remaining > 0);
+  const today = ymd(new Date());
+  return D.enrollments.filter(e => e.studentId === studentId && e.subjectId === subjectId && ['paid', 'partial'].includes(e.status) && (!e.to || e.to >= today)).sort((a, b) => String(a.to || '9').localeCompare(String(b.to || '9'))).find(e => enrollUsage(e).remaining > 0);
+}
+// حالة الباقة لولي الأمر: كام حصة وكام يوم باقيين، وهل قربت تخلص
+const PKG_DAYS = () => Math.max(7, Math.min(365, +(D.settings && D.settings.packageDays) || 60));
+function pkgState(e) {
+  const us = enrollUsage(e); const today = new Date(ymd(new Date()) + 'T00:00:00');
+  const days = e.to ? Math.round((new Date(e.to + 'T00:00:00') - today) / DAY) : null;
+  let st = 'active';
+  if (e.status === 'withdrawn') st = 'withdrawn'; else if (e.status === 'pending') st = 'pending';
+  else if (us.remaining <= 0) st = 'finished'; else if (days != null && days < 0) st = 'expired';
+  else if ((days != null && days <= 7) || us.remaining <= 2) st = 'expiring';
+  return { ...us, days, st };
 }
 
 /* ---------- chat contact filter ---------- */
