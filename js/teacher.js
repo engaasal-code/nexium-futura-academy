@@ -199,7 +199,7 @@ function T_evals(u) {
 }
 function T_evalForm(st, sub) {
   const u = currentUser(); const ex = D.evals.find(e => e.studentId === st && e.subjectId === sub && e.teacherId === u.id) || { interaction: 80, homework: 80, commitment: 80, note: '' };
-  const sl = (id, l, v) => `<div class="field"><label>${l}: <b class="num" id="${id}_v">${v}%</b></label><input type="range" min="0" max="100" step="5" id="${id}" value="${v}" oninput="document.getElementById('${id}_v').textContent=this.value+'%'" style="width:100%;accent-color:var(--navy)"></div>`;
+  const sl = (id, l, v) => `<div class="field"><label>${l}: <b class="num" id="${id}_v">${v}%</b></label><input type="range" min="0" max="100" step="5" id="${id}" value="${v}" oninput="document.getElementById('${id}_v').textContent=this.value+'%'" style="width:100%;accent-color:var(--link)"></div>`;
   modal(L('تقييم ', 'Evaluate ') + esc(stuById(st).name), `<div class="small muted" style="margin-bottom:12px">${esc(subjName(subjById(sub)))} · ${L('نسبة الحضور بتتحسب تلقائياً:', 'Attendance is automatic:')} <b class="num">${studentEval(st, sub).att ?? '—'}%</b></div>
     ${sl('ev_i', L('التفاعل', 'Engagement'), ex.interaction)}${sl('ev_h', L('الواجب', 'Homework'), ex.homework)}${sl('ev_c', L('الالتزام', 'Commitment'), ex.commitment)}
     <div class="field"><label>${L('ملاحظة لولي الأمر', 'Note to parent')}</label><textarea class="input" id="ev_n">${esc(ex.note)}</textarea></div>`,

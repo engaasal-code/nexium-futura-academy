@@ -102,7 +102,7 @@ function landingHTML() {
     ${brandHTML()}
     <div class="lp-contact hide-m">${phone ? `<div>${icon('phone')} ${L('الخط الساخن', 'Hotline')} <span class="num">${esc(phone)}</span></div>` : ''}${wa ? `<div>${bicon('whatsapp', 14)} ${L('واتساب', 'WhatsApp')} <span class="num">${esc(wa)}</span></div>` : ''}</div>
     <nav class="lp-nav ${LP.menu ? 'open' : ''}">${nav.map(([k, l]) => `<a onclick="LP_go('${k}')">${l}</a>`).join('')}${D.pages.filter(p => p.status === 'published' && p.slug === 'about').map(p => `<a onclick="openPage('about')">${esc(tx(p.title))}</a>`).join('')}<a class="lp-nav-login" onclick="LP_auth('login')">${L('تسجيل الدخول', 'Log in')}</a></nav>
-    <div class="lp-tools"><button class="iconbtn lang" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${LANG === 'ar' ? 'EN' : 'ع'}</button>
+    <div class="lp-tools">${themeBtn()}<button class="iconbtn lang" onclick="setLang('${LANG === 'ar' ? 'en' : 'ar'}')">${LANG === 'ar' ? 'EN' : 'ع'}</button>
       <button class="btn ghost sm lp-login" onclick="LP_auth('login')">${L('دخول', 'Log in')} ${icon('door')}</button><button class="btn gold sm" onclick="LP_auth('register')">${L('إنشاء حساب', 'Sign up')}</button>
       <button class="iconbtn lp-burger" onclick="LP.menu=!LP.menu;render()">${icon('menu')}</button></div></div></header>`;
   const S = {

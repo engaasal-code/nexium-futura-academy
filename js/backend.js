@@ -247,7 +247,7 @@ if (LIVE.on) {
     const { data, error } = await LIVE.sb.rpc('book_slot', { p_slot: SB.slot, p_subject: SB.subject, p_student: currentUser().id });
     if (error) return toast(liveErr(error.message), 'bad');
     await liveLoad(); closeModal(); const s = D.sessions.find(x => x.id === SB.slot) || fromRow(MAP.find(m => m.key === 'sessions'), data);
-    modal(L('تم الحجز ✓', 'Booked ✓'), `<div style="text-align:center"><div style="font-size:48px">🎉</div><h3>${esc(subjName(subjById(s.subjectId)))} · ${esc(tName(tchById(s.teacherId)))}</h3><p class="num" style="font-size:16px;font-weight:700;color:var(--navy)">${fmtDT(s.start)}</p>
+    modal(L('تم الحجز ✓', 'Booked ✓'), `<div style="text-align:center"><div style="font-size:48px">🎉</div><h3>${esc(subjName(subjById(s.subjectId)))} · ${esc(tName(tchById(s.teacherId)))}</h3><p class="num" style="font-size:16px;font-weight:700;color:var(--link)">${fmtDT(s.start)}</p>
       <div class="notice gold" style="text-align:start">${icon('mail')} ${L('هيوصلك إيميل على', 'An email will be sent to')} <b class="num">${esc(currentUser().email)}</b> ${L('فيه لينك الزوم قبل الحصة بـ 10 دقايق.', 'with the Zoom link 10 minutes before the session.')}</div></div>`,
       `<button class="btn" onclick="closeModal();go('schedule')">${L('عرض جدولي', 'View my schedule')}</button>`);
   };
